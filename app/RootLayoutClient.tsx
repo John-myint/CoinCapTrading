@@ -124,10 +124,6 @@ export function RootLayoutClient({
                 </Link>
               </div>
             </nav>
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
         </div>
       )}
