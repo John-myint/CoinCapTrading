@@ -19,12 +19,16 @@ export default function SettingsPage() {
     router.push('/login');
   };
 
+  const handleBack = () => {
+    router.push('/');
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+    <div className="h-screen bg-[#0a0a0a] flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-50 flex items-center justify-between p-4 glass border-b border-white/10">
         <button
-          onClick={() => router.back()}
+          onClick={handleBack}
           className="p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <ArrowLeft size={24} className="text-white" />
