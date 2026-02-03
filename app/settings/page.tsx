@@ -33,35 +33,37 @@ export default function SettingsPage() {
         >
           <ArrowLeft size={24} className="text-white" />
         </button>
-        <h1 className="text-white font-semibold text-lg">Settings</h1>
+        <h1 className="text-white font-semibold text-lg">Account Settings</h1>
         <div className="w-10 h-10" />
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {/* Profile Section */}
-        <div className="p-6 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-b border-white/10">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-2 border-accent">
-              KG
-            </div>
-            <div className="flex-1">
-              <p className="text-white text-lg font-semibold">KG</p>
-              <p className="text-gray-400 text-xs">Premium Member</p>
+        <div className="p-6 space-y-4">
+          <div className="glass-card">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-2 border-accent">
+                KG
+              </div>
+              <div className="flex-1">
+                <p className="text-white text-lg font-semibold">KG</p>
+                <p className="text-xs text-gray-400">Premium Member</p>
+              </div>
             </div>
           </div>
 
           {/* UID and Referral */}
-          <div className="mt-6 space-y-3">
+          <div className="space-y-3">
             <div className="glass-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs">UID</p>
+                  <p className="text-xs text-gray-400">UID</p>
                   <p className="text-white font-semibold">1106103</p>
                 </div>
                 <button
                   onClick={() => handleCopy('1106103', 'uid')}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   <Copy size={18} className={copied === 'uid' ? 'text-success' : 'text-gray-400'} />
                 </button>
@@ -71,12 +73,12 @@ export default function SettingsPage() {
             <div className="glass-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs">Referral Code</p>
+                  <p className="text-xs text-gray-400">Referral Code</p>
                   <p className="text-white font-semibold">REF1234567</p>
                 </div>
                 <button
                   onClick={() => handleCopy('REF1234567', 'referral')}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   <Copy size={18} className={copied === 'referral' ? 'text-success' : 'text-gray-400'} />
                 </button>
@@ -86,81 +88,88 @@ export default function SettingsPage() {
         </div>
 
         {/* Settings Menu */}
-        <div className="p-4 space-y-6 pb-20">
-        {/* Account Section */}
-        <div className="space-y-1">
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <Shield size={20} className="text-blue-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">Authentication</p>
-            </div>
-            <span className="text-xs bg-success/20 text-success px-3 py-1 rounded-full font-semibold">Certified</span>
-          </button>
+        <div className="p-6 space-y-6 pb-20">
+          {/* Account Section */}
+          <div className="space-y-2">
+            <p className="text-xs text-gray-400 font-semibold px-2">ACCOUNT</p>
+            <div className="space-y-2">
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Shield size={18} className="text-accent" />
+                  <p className="text-white font-medium text-sm">Authentication</p>
+                </div>
+                <span className="text-xs bg-success/20 text-success px-3 py-1 rounded-full font-semibold">Certified</span>
+              </button>
 
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <Globe size={20} className="text-purple-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">Language</p>
-            </div>
-            <span className="text-gray-400 text-sm">English</span>
-          </button>
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Globe size={18} className="text-purple-400" />
+                  <p className="text-white font-medium text-sm">Language</p>
+                </div>
+                <span className="text-xs text-gray-400">English</span>
+              </button>
 
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <Home size={20} className="text-cyan-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">Withdrawal Address</p>
-            </div>
-          </button>
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Home size={18} className="text-cyan-400" />
+                  <p className="text-white font-medium text-sm">Withdrawal Address</p>
+                </div>
+              </button>
 
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <Lock size={20} className="text-orange-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">Password Setting</p>
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Lock size={18} className="text-orange-400" />
+                  <p className="text-white font-medium text-sm">Password Setting</p>
+                </div>
+              </button>
             </div>
-          </button>
-        </div>
+          </div>
 
-        {/* Support Section */}
-        <div className="border-t border-white/10 pt-6 space-y-1">
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <HelpCircle size={20} className="text-green-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">Help Center</p>
-            </div>
-          </button>
+          {/* Support Section */}
+          <div className="space-y-2">
+            <p className="text-xs text-gray-400 font-semibold px-2">SUPPORT</p>
+            <div className="space-y-2">
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <HelpCircle size={18} className="text-green-400" />
+                  <p className="text-white font-medium text-sm">Help Center</p>
+                </div>
+              </button>
 
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <Bell size={20} className="text-yellow-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">Notification</p>
-            </div>
-            <span className="text-xs bg-accent/20 text-accent px-3 py-1 rounded-full font-semibold">New</span>
-          </button>
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Bell size={18} className="text-yellow-400" />
+                  <p className="text-white font-medium text-sm">Notification</p>
+                </div>
+                <span className="text-xs bg-accent/20 text-accent px-3 py-1 rounded-full font-semibold">New</span>
+              </button>
 
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <Info size={20} className="text-pink-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">About Us</p>
-            </div>
-          </button>
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Info size={18} className="text-pink-400" />
+                  <p className="text-white font-medium text-sm">About Us</p>
+                </div>
+              </button>
 
-          <button className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-colors">
-            <Headphones size={20} className="text-indigo-400" />
-            <div className="flex-1 text-left">
-              <p className="text-white font-medium">MSB Certification</p>
+              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Headphones size={18} className="text-indigo-400" />
+                  <p className="text-white font-medium text-sm">MSB Certification</p>
+                </div>
+              </button>
             </div>
-          </button>
-        </div>
-        {/* Sign Out */}
-        <div className="border-t border-white/10 pt-6">
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-danger/20 transition-colors text-danger"
-          >
-            <LogOut size={20} />
-            <p className="font-medium">Sign Out</p>
-          </button>
-        </div>
+          </div>
+
+          {/* Sign Out */}
+          <div className="pt-4">
+            <button
+              onClick={handleSignOut}
+              className="w-full glass-card flex items-center gap-3 p-4 rounded-lg hover:bg-danger/10 transition-colors text-danger font-medium"
+            >
+              <LogOut size={18} />
+              <p>Sign Out</p>
+            </button>
+          </div>
         </div>
       </div>
     </div>
