@@ -80,10 +80,10 @@ export default function HomePage() {
                   Dashboard
                 </Link>
                 <button
-                  onClick={() => router.push('/profile')}
+                  onClick={() => router.push('/account')}
                   className="px-4 py-2 rounded-lg bg-accent/20 hover:bg-accent/30 text-accent font-semibold transition-colors"
                 >
-                  Profile
+                  Account
                 </button>
               </>
             ) : (
