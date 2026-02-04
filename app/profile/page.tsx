@@ -18,6 +18,7 @@ interface UserProfile {
   accountStatus: string;
   language: string;
   withdrawalAddress: string;
+  profilePicture: string | null;
   createdAt: string;
 }
 
@@ -33,6 +34,8 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [language, setLanguage] = useState('English');
   const [withdrawalAddress, setWithdrawalAddress] = useState('');
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [previewPicture, setPreviewPicture] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load user profile
@@ -71,6 +74,8 @@ export default function ProfilePage() {
         setFullName(data.user.fullName);
         setLanguage(data.user.language || 'English');
         setWithdrawalAddress(data.user.withdrawalAddress || '');
+        setProfilePicture(data.user.profilePicture || null);
+        setPreviewPicture(data.user.profilePicture || null);
       } catch (error) {
         console.error('Load profile error:', error);
         setError('An error occurred while loading your profile');
@@ -86,6 +91,32 @@ export default function ProfilePage() {
     navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be less than 5MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setProfilePicture(base64);
+      setPreviewPicture(base64);
+      setError('');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveProfile = async () => {
@@ -105,6 +136,7 @@ export default function ProfilePage() {
           fullName,
           language,
           withdrawalAddress,
+          profilePicture,
         }),
       });
 
@@ -187,9 +219,17 @@ export default function ProfilePage() {
         <div className="glass-card">
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-accent">
-                {user.fullName.charAt(0).toUpperCase()}
-              </div>
+              {user.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt={user.fullName}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-accent"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-accent">
+                  {user.fullName.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div>
                 <h2 className="text-2xl font-bold text-white">{user.fullName}</h2>
                 <p className="text-gray-400 flex items-center gap-2">
@@ -257,6 +297,36 @@ export default function ProfilePage() {
               >
                 <X size={20} className="text-gray-400" />
               </button>
+            </div>
+
+            {/* Profile Picture */}
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Profile Picture</label>
+              <div className="flex items-center gap-4">
+                {previewPicture ? (
+                  <img
+                    src={previewPicture}
+                    alt="Profile preview"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-accent"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold border-2 border-accent">
+                    {fullName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <label className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <div className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-accent/50 cursor-pointer text-center text-gray-400 hover:text-accent transition-colors">
+                    Choose Image
+                  </div>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Max 5MB. JPG, PNG, GIF</p>
             </div>
 
             {/* Full Name */}

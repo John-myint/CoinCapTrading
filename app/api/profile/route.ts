@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await User.findById(userId).select(
-      'fullName email uid referralCode isVerified accountStatus language withdrawalAddress createdAt'
+      'fullName email uid referralCode isVerified accountStatus language withdrawalAddress profilePicture createdAt'
     );
 
     if (!user) {
@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
           accountStatus: user.accountStatus,
           language: user.language,
           withdrawalAddress: user.withdrawalAddress,
+          profilePicture: user.profilePicture,
           createdAt: user.createdAt,
         },
       },
@@ -78,7 +79,7 @@ export async function PUT(request: NextRequest) {
   try {
     await connectDB();
 
-    const { userId, fullName, language, withdrawalAddress } = await request.json();
+    const { userId, fullName, language, withdrawalAddress, profilePicture } = await request.json();
 
     if (!userId) {
       return NextResponse.json(
@@ -100,6 +101,7 @@ export async function PUT(request: NextRequest) {
     if (fullName) user.fullName = fullName;
     if (language) user.language = language;
     if (withdrawalAddress !== undefined) user.withdrawalAddress = withdrawalAddress;
+    if (profilePicture !== undefined) user.profilePicture = profilePicture;
 
     await user.save();
 
@@ -116,6 +118,7 @@ export async function PUT(request: NextRequest) {
           accountStatus: user.accountStatus,
           language: user.language,
           withdrawalAddress: user.withdrawalAddress,
+          profilePicture: user.profilePicture,
         },
       },
       { status: 200 }
