@@ -101,8 +101,8 @@ export function RootLayoutClient({
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm top-16 pt-0" onClick={() => setMobileMenuOpen(false)}>
-          <div className="glass-card m-4 max-h-[calc(100vh-120px)] overflow-y-auto">
+        <div className="md:hidden fixed top-16 left-0 right-0 bottom-20 z-40 bg-black/80 backdrop-blur-sm overflow-y-auto" onClick={() => setMobileMenuOpen(false)}>
+          <div className="glass-card m-4" onClick={(e) => e.stopPropagation()}>
             <nav className="space-y-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
