@@ -25,13 +25,13 @@ export default async function RootLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const locale = params.locale || 'en';
+  const { locale } = await params;
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale || 'en'}>
       <body className="bg-[#0a0a0a] text-white overflow-hidden">
         <NextIntlClientProvider messages={messages}>
           <RootLayoutClient>{children}</RootLayoutClient>
