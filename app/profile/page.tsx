@@ -60,7 +60,9 @@ export default function ProfilePage() {
         }
 
         if (!response.ok) {
-          setError('Failed to load profile');
+          const errorData = await response.json();
+          console.error('Profile API error:', errorData);
+          setError(errorData.error || 'Failed to load profile');
           return;
         }
 

@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
 
     // Verify and decode token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
 
-    // Fetch user from database
-    const user = await User.findById(decoded.id).select(
+    // Fetch user from database using userId from token
+    const user = await User.findById(decoded.userId).select(
       'fullName email uid referralCode isVerified accountStatus language withdrawalAddress createdAt'
     );
 
