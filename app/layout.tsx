@@ -28,12 +28,12 @@ export default async function RootLayout({
   params: { locale: string };
 }) {
   const locale = params.locale || 'en';
-  const messages = await getMessages({ locale });
+  const messages = await getMessages();
 
   return (
     <html lang={locale}>
       <body className="bg-[#0a0a0a] text-white overflow-hidden">
-        <NextIntlClientProvider messages={messages} locale={locale}>
+        <NextIntlClientProvider messages={messages}>
           <RootLayoutClient>{children}</RootLayoutClient>
         </NextIntlClientProvider>
       </body>
