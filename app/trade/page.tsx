@@ -197,8 +197,8 @@ export default function TradePage() {
                 <p className={`text-xs ${isUp ? 'text-success' : 'text-danger'}`}>{liveChange}%</p>
               </div>
             </div>
-            <div className="relative w-full h-56 md:h-64 bg-black/20 rounded-lg border border-white/5 flex items-center justify-center mb-2">
-              <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-full" showPrice={false} />
+            <div className="mb-2">
+              <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-56 md:h-64" showPrice={false} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div className="p-2 rounded-lg bg-white/5">
