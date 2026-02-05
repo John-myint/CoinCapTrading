@@ -218,15 +218,7 @@ export default function HomePage() {
             className="glass-card p-2 sm:p-3 md:p-3 cursor-pointer hover:bg-white/10 transition-colors overflow-hidden"
             onClick={() => router.push('/trade')}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1 sm:mb-2">
-              <h2 className="text-xs sm:text-base font-semibold">BTC/USD</h2>
-              <div className="flex gap-1">
-                <button className="text-xs px-2 py-1 rounded bg-accent text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1H</button>
-                <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">24H</button>
-                <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">7D</button>
-                <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1M</button>
-              </div>
-            </div>
+            <h2 className="text-xs sm:text-base font-semibold mb-2">BTC/USD</h2>
             
             {/* TradingView Chart Placeholder */}
             <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-48 sm:h-56 md:h-64" />
