@@ -82,25 +82,36 @@ export async function GET(request: Request) {
       console.log(`Binance failed for ${failedCoins.length} coins, trying CoinGecko fallback...`);
       
       try {
-        const geckoResponse = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${failedCoins.join(',')}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`,
-          {
-            cache: 'no-store',
-            signal: AbortSignal.timeout(5000),
-          }
-        );
+        // Use CoinGecko market data endpoint for better data
+        const geckoPromises = failedCoins.map(async (id) => {
+          try {
+            const geckoResponse = await fetch(
+              `https://api.coingecko.com/api/v3/coins/${id.toLowerCase()}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`,
+              {
+                cache: 'no-store',
+                signal: AbortSignal.timeout(5000),
+              }
+            );
 
-        if (geckoResponse.ok) {
-          const geckoData = await geckoResponse.json();
-          fallbackData = failedCoins.map(id => ({
-            id,
-            price: geckoData[id.toLowerCase()]?.usd || 0,
-            change24h: geckoData[id.toLowerCase()]?.usd_24h_change || 0,
-            high24h: 0,
-            low24h: 0,
-            volume24h: geckoData[id.toLowerCase()]?.usd_24h_vol || 0,
-          }));
-        }
+            if (geckoResponse.ok) {
+              const geckoData = await geckoResponse.json();
+              return {
+                id,
+                price: geckoData.market_data?.current_price?.usd || 0,
+                change24h: geckoData.market_data?.price_change_percentage_24h || 0,
+                high24h: geckoData.market_data?.high_24h?.usd || 0,
+                low24h: geckoData.market_data?.low_24h?.usd || 0,
+                volume24h: geckoData.market_data?.total_volume?.usd || 0,
+              };
+            }
+          } catch (error) {
+            console.warn(`CoinGecko detailed fetch failed for ${id}:`, error);
+          }
+          return null;
+        });
+
+        const geckoResults = await Promise.all(geckoPromises);
+        fallbackData = geckoResults.filter(r => r !== null);
       } catch (error) {
         console.warn('CoinGecko fallback also failed:', error);
       }
