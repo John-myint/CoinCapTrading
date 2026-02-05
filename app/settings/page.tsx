@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, Lock, Globe, Home, HelpCircle, Bell, Info, LogOut, Shield, Headphones } from 'lucide-react';
+import { ArrowLeft, Copy, Lock, Globe, Home, HelpCircle, Bell, Info, Shield, Headphones } from 'lucide-react';
 import Image from 'next/image';
 
 export default function SettingsPage() {
@@ -13,10 +13,6 @@ export default function SettingsPage() {
     navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
-  };
-
-  const handleSignOut = () => {
-    router.push('/login');
   };
 
   const handleBack = () => {
@@ -158,17 +154,6 @@ export default function SettingsPage() {
                 </div>
               </button>
             </div>
-          </div>
-
-          {/* Sign Out */}
-          <div className="pt-4">
-            <button
-              onClick={handleSignOut}
-              className="w-full glass-card flex items-center gap-3 p-4 rounded-lg hover:bg-danger/10 transition-colors text-danger font-medium"
-            >
-              <LogOut size={18} />
-              <p>Sign Out</p>
-            </button>
           </div>
         </div>
       </div>

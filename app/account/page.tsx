@@ -587,6 +587,15 @@ export default function AccountPage() {
                 </button>
               </div>
             </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="w-full py-3 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 font-semibold transition-colors flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
           </div>
         )}
 
@@ -760,14 +769,6 @@ export default function AccountPage() {
           </div>
         )}
 
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="w-full py-3 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 font-semibold transition-colors flex items-center justify-center gap-2"
-        >
-          <LogOut size={18} />
-          Logout
-        </button>
       </div>
     </div>
   );
