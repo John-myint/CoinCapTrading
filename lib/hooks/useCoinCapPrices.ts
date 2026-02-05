@@ -26,7 +26,7 @@ type PriceMap = Record<
 
 const STORAGE_KEY = 'coincap_prices';
 
-export function useCoinCapPrices(ids: string[], refreshMs = 3000) {
+export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
   const [prices, setPrices] = useState<PriceMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +83,9 @@ export function useCoinCapPrices(ids: string[], refreshMs = 3000) {
             }
           }
           
-          console.log('✓ Prices updated at', new Date(now).toLocaleTimeString());
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✓ Prices updated at', new Date(now).toLocaleTimeString());
+          }
         }
       }
     } catch (err) {
@@ -107,7 +109,9 @@ export function useCoinCapPrices(ids: string[], refreshMs = 3000) {
           const cachedPrices = JSON.parse(cached);
           setPrices(cachedPrices);
           setIsLoading(false);
-          console.log('✓ Loaded cached prices from localStorage');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✓ Loaded cached prices from localStorage');
+          }
           // If cache was just loaded, don't force fresh fetch unless it's stale (>10s)
           shouldFetchFresh = false;
           lastFetchTimeRef.current = Date.now();
@@ -125,12 +129,16 @@ export function useCoinCapPrices(ids: string[], refreshMs = 3000) {
     // Handle tab visibility - pause/resume fetching
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        console.log('Tab hidden - pausing price updates');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Tab hidden - pausing price updates');
+        }
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
         }
       } else {
-        console.log('Tab visible - resuming price updates');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Tab visible - resuming price updates');
+        }
         // Force refresh when tab becomes visible (only if more than 5 seconds have passed)
         const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
         if (timeSinceLastFetch > 5000) {
@@ -147,7 +155,9 @@ export function useCoinCapPrices(ids: string[], refreshMs = 3000) {
     const handleWindowFocus = () => {
       const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
       if (timeSinceLastFetch > 10000) {
-        console.log('Window focused - prices stale, refreshing');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Window focused - prices stale, refreshing');
+        }
         fetchPrices(true);
       }
     };

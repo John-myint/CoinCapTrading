@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Search, Star, TrendingDown, TrendingUp } from 'lucide-react';
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
@@ -38,17 +39,36 @@ const markets = [
 ];
 
 export default function MarketsPage() {
+  const [filter, setFilter] = useState<'all' | 'gainers' | 'losers'>('all');
   const { prices } = useCoinCapPrices(markets.map((coin) => coin.id));
-  const liveMarkets = markets.map((coin) => {
-    const live = prices[coin.id];
-    if (!live) return coin;
-    return {
-      ...coin,
-      price: formatPrice(live.priceUsd),
-      change: formatChange(live.changePercent24Hr),
-      isUp: live.changePercent24Hr >= 0,
-    };
-  });
+  
+  const liveMarkets = useMemo(() => {
+    const withPrices = markets.map((coin) => {
+      const live = prices[coin.id];
+      if (!live) return { ...coin, changePercent: 0 };
+      return {
+        ...coin,
+        price: formatPrice(live.priceUsd),
+        change: formatChange(live.changePercent24Hr),
+        isUp: live.changePercent24Hr >= 0,
+        changePercent: live.changePercent24Hr,
+      };
+    });
+
+    if (filter === 'gainers') {
+      return withPrices
+        .filter((coin) => coin.changePercent > 0)
+        .sort((a, b) => b.changePercent - a.changePercent);
+    }
+    
+    if (filter === 'losers') {
+      return withPrices
+        .filter((coin) => coin.changePercent < 0)
+        .sort((a, b) => a.changePercent - b.changePercent);
+    }
+    
+    return withPrices;
+  }, [prices, filter]);
 
   return (
     <div className="min-h-screen p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
@@ -67,9 +87,30 @@ export default function MarketsPage() {
             />
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 rounded-lg bg-accent text-white text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">All</button>
-            <button className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Gainers</button>
-            <button className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Losers</button>
+            <button 
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-lg text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors ${
+                filter === 'all' ? 'bg-accent text-white' : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              All
+            </button>
+            <button 
+              onClick={() => setFilter('gainers')}
+              className={`px-4 py-2 rounded-lg text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors ${
+                filter === 'gainers' ? 'bg-accent text-white' : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              Gainers
+            </button>
+            <button 
+              onClick={() => setFilter('losers')}
+              className={`px-4 py-2 rounded-lg text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors ${
+                filter === 'losers' ? 'bg-accent text-white' : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              Losers
+            </button>
           </div>
         </div>
       </div>
@@ -89,7 +130,11 @@ export default function MarketsPage() {
 
       <div className="glass-card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Top Markets</h2>
+          <h2 className="text-lg font-semibold">
+            {filter === 'all' && 'Top Markets'}
+            {filter === 'gainers' && 'Top Gainers (24h)'}
+            {filter === 'losers' && 'Top Losers (24h)'}
+          </h2>
           <button className="text-xs text-gray-400 hover:text-white">View All</button>
         </div>
 

@@ -1,39 +1,36 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import { createToken } from '@/lib/auth';
 import { sendVerificationEmail } from '@/lib/email';
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
+import { registerSchema } from '@/lib/validation/schemas';
+import { generateSecureToken, hashToken } from '@/lib/auth';
+import { logger } from '@/lib/utils/logger';
+
+const log = logger.child({ module: 'RegisterRoute' });
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await withStrictRateLimit(request, undefined, 3, '1 h');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
-    const { fullName, email, password, passwordConfirm } = await request.json();
-
-    // Validation
-    if (!fullName || !email || !password || !passwordConfirm) {
+    const body = await request.json();
+    
+    const validationResult = registerSchema.safeParse(body);
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Please provide all required fields' },
+        { 
+          error: 'Validation failed', 
+          details: validationResult.error.flatten().fieldErrors 
+        },
         { status: 400 }
       );
     }
 
-    if (password !== passwordConfirm) {
-      return NextResponse.json(
-        { error: 'Passwords do not match' },
-        { status: 400 }
-      );
-    }
+    const { fullName, email, password } = validationResult.data;
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
@@ -42,28 +39,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create user
     const user = await User.create({
       fullName,
       email,
       password,
     });
 
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationToken = generateSecureToken();
+    const hashedToken = hashToken(verificationToken);
+    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    user.verificationToken = verificationToken;
+    user.verificationToken = hashedToken;
     user.verificationTokenExpires = verificationTokenExpires;
     await user.save();
 
-    // Send verification email
     const emailResult = await sendVerificationEmail(email, verificationToken);
     
     if (!emailResult.success) {
-      console.error('Failed to send verification email:', emailResult.error);
-      // Still return success but user should check spam folder or resend verification
+      log.warn({ email, error: emailResult.error }, 'Failed to send verification email');
     }
+
+    log.info({ userId: user._id, email: user.email }, 'User registered successfully');
 
     const response = NextResponse.json(
       {
@@ -80,9 +76,9 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Register error:', error);
+    log.error({ error }, 'Register error');
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Registration failed' },
       { status: 500 }
     );
   }

@@ -1,10 +1,18 @@
 import { connectDB } from '@/lib/mongodb';
-import Portfolio from '@/lib/models/Portfolio';
 import Trade from '@/lib/models/Trade';
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/auth';
+import { PortfolioService } from '@/lib/services/portfolioService';
+import { logger } from '@/lib/utils/logger';
+import { withRateLimit } from '@/lib/middleware/rateLimit';
+import { JWTPayload, Holding } from '@/lib/types';
+
+const log = logger.child({ module: 'DashboardRoute' });
 
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = await withRateLimit(request);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
@@ -17,40 +25,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify JWT token
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    } catch (error) {
+    const decoded = verifyToken(token) as JWTPayload | null;
+
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
       );
     }
 
-    // Get or create portfolio for user
-    let portfolio = await Portfolio.findOne({ userId: decoded.userId });
+    const portfolio = await PortfolioService.getPortfolio(decoded.userId);
 
-    if (!portfolio) {
-      // Create new portfolio with default values
-      portfolio = new Portfolio({
-        userId: decoded.userId,
-        accountBalance: 10000,
-        totalInvested: 0,
-        totalReturns: 0,
-        holdings: [],
-      });
-      await portfolio.save();
-    }
-
-    // Get recent trades (last 10)
     const trades = await Trade.find({ userId: decoded.userId })
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // Calculate portfolio stats
     const totalPortfolioValue = portfolio.accountBalance + 
-      (portfolio.holdings?.reduce((sum: number, h: any) => sum + (h.totalValue || 0), 0) || 0);
+      (portfolio.holdings?.reduce((sum: number, h: Holding) => sum + (h.totalValue || 0), 0) || 0);
 
     return NextResponse.json(
       {
@@ -70,9 +61,9 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Dashboard API error:', error);
+    log.error({ error }, 'Dashboard API error');
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to load dashboard data' },
       { status: 500 }
     );
   }

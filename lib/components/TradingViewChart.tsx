@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo, useMemo } from 'react';
 import { BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface TradingViewChartProps {
@@ -12,7 +12,7 @@ interface TradingViewChartProps {
 }
 
 // Simple SVG-based fallback chart
-function SimpleChart({ data, height, coinName, showPrice = true, currentPrice }: { data: { time: number; price: number }[]; height: string; coinName: string; showPrice?: boolean; currentPrice?: number }) {
+const SimpleChart = memo(function SimpleChart({ data, height, coinName, showPrice = true, currentPrice }: { data: { time: number; price: number }[]; height: string; coinName: string; showPrice?: boolean; currentPrice?: number }) {
   if (!data || data.length === 0) return null;
 
   const prices = data.map(d => d.price);
@@ -115,9 +115,9 @@ function SimpleChart({ data, height, coinName, showPrice = true, currentPrice }:
       <p className="text-xs text-gray-500 mt-2">30-day historical price chart</p>
     </div>
   );
-}
+});
 
-export function TradingViewChart({ coinId, coinName, height = 'h-96', showPrice = true, currentPrice }: TradingViewChartProps) {
+export const TradingViewChart = memo(function TradingViewChart({ coinId, coinName, height = 'h-96', showPrice = true, currentPrice }: TradingViewChartProps) {
   const [chartData, setChartData] = useState<{ time: number; price: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -226,7 +226,7 @@ export function TradingViewChart({ coinId, coinName, height = 'h-96', showPrice 
   }
 
   return <SimpleChart data={chartData} height={height} coinName={coinName} showPrice={showPrice} currentPrice={currentPrice} />;
-}
+});
 
 // Generate realistic mock data
 function generateMockData() {

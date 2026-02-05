@@ -128,28 +128,28 @@ export default function HomePage() {
   };
 
   return (
-    <div className="responsive-container max-w-7xl mx-auto space-y-2 sm:space-y-2 md:space-y-3 lg:space-y-3 pb-4 min-h-screen flex flex-col">
+    <div className="responsive-container max-w-7xl mx-auto space-y-1.5 md:space-y-2 pb-2 min-h-screen flex flex-col">
       {/* Price Ticker */}
-      <div className="glass-card overflow-x-auto snap-x snap-mandatory">
-        <div className="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 min-w-max p-2 sm:p-2 md:p-2">
+      <div className="glass-card overflow-x-auto snap-x snap-mandatory p-2">
+        <div className="flex gap-2 sm:gap-2.5 md:gap-3 min-w-max">
           {livePrices.slice(0, 4).map((crypto) => (
-            <div key={crypto.symbol} className="flex items-center gap-2 snap-start shrink-0">
-              <div className="relative w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0">
+            <div key={crypto.symbol} className="flex items-center gap-1.5 snap-start shrink-0">
+              <div className="relative w-6 h-6 flex-shrink-0">
                 <Image
                   src={crypto.logo}
                   alt={crypto.name}
-                  width={28}
-                  height={28}
+                  width={24}
+                  height={24}
                   className="w-full h-full rounded-full object-cover"
                   priority={false}
                   loading="lazy"
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-400 truncate">{crypto.symbol}</p>
-                <p className="text-xs sm:text-sm font-semibold truncate">${crypto.price}</p>
+                <p className="text-[10px] text-gray-400 truncate leading-tight">{crypto.symbol}</p>
+                <p className="text-xs font-semibold truncate leading-tight">${crypto.price}</p>
               </div>
-              <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
+              <span className={`text-[10px] flex items-center gap-0.5 whitespace-nowrap ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
                 {crypto.isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                 {crypto.change}%
               </span>
@@ -159,108 +159,106 @@ export default function HomePage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2 md:gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2">
         <div 
-          className="glass-card p-3 md:p-2 cursor-pointer hover:bg-white/10 transition-colors"
+          className="glass-card p-2 md:p-2.5 cursor-pointer hover:bg-white/10 transition-colors"
           onClick={() => router.push('/wallet')}
         >
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-gray-400 truncate">Total Balance</p>
-            <DollarSign size={14} className="text-accent flex-shrink-0" />
+            <p className="text-[10px] text-gray-400 truncate">Total Balance</p>
+            <DollarSign size={12} className="text-accent flex-shrink-0" />
           </div>
-          <p className="text-sm md:text-base font-bold truncate">$24,567.89</p>
-          <p className="text-xs text-success truncate mt-0.5">+12.5%</p>
+          <p className="text-sm font-bold truncate">$24,567.89</p>
+          <p className="text-[10px] text-success truncate">+12.5%</p>
         </div>
         
         <div 
-          className="glass-card p-3 md:p-2 hidden md:block cursor-pointer hover:bg-white/10 transition-colors"
+          className="glass-card p-2 md:p-2.5 cursor-pointer hover:bg-white/10 transition-colors"
           onClick={() => router.push('/trade')}
         >
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-gray-400 truncate">24h Volume</p>
-            <BarChart3 size={14} className="text-purple-400 flex-shrink-0" />
+            <p className="text-[10px] text-gray-400 truncate">24h Volume</p>
+            <BarChart3 size={12} className="text-purple-400 flex-shrink-0" />
           </div>
-          <p className="text-sm md:text-base font-bold truncate">$8,429.12</p>
-          <p className="text-xs text-gray-400 truncate mt-0.5">15 TX</p>
+          <p className="text-sm font-bold truncate">$8,429.12</p>
+          <p className="text-[10px] text-gray-400 truncate">15 TX</p>
         </div>
         
         <div 
-          className="glass-card p-3 md:p-2 hidden md:block cursor-pointer hover:bg-white/10 transition-colors"
+          className="glass-card p-2 md:p-2.5 cursor-pointer hover:bg-white/10 transition-colors"
           onClick={() => router.push('/trade')}
         >
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-gray-400 truncate">Top Gainer</p>
-            <TrendingUp size={14} className="text-success flex-shrink-0" />
+            <p className="text-[10px] text-gray-400 truncate">Top Gainer</p>
+            <TrendingUp size={12} className="text-success flex-shrink-0" />
           </div>
-          <p className="text-sm md:text-base font-bold">ADA</p>
-          <p className="text-xs text-success mt-0.5">+3.2%</p>
+          <p className="text-sm font-bold">ADA</p>
+          <p className="text-[10px] text-success">+3.2%</p>
         </div>
         
         <div 
-          className="glass-card p-3 md:p-2 hidden md:block cursor-pointer hover:bg-white/10 transition-colors"
+          className="glass-card p-2 md:p-2.5 cursor-pointer hover:bg-white/10 transition-colors"
           onClick={() => router.push('/trade')}
         >
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-gray-400 truncate">Active Orders</p>
-            <Activity size={14} className="text-blue-400 flex-shrink-0" />
+            <p className="text-[10px] text-gray-400 truncate">Active Orders</p>
+            <Activity size={12} className="text-blue-400 flex-shrink-0" />
           </div>
-          <p className="text-sm md:text-base font-bold">7</p>
-          <p className="text-xs text-gray-400 mt-0.5">3 Pending</p>
+          <p className="text-sm font-bold">7</p>
+          <p className="text-[10px] text-gray-400">3 Pending</p>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 lg:gap-3 flex-1">
-        {/* Chart Section - Full width on mobile, spans multiple col on larger screens */}
-        <div className="md:col-span-2 lg:col-span-2 space-y-2 md:space-y-2 lg:space-y-2">
+      <div className="grid md:grid-cols-3 lg:grid-cols-3 gap-1.5 md:gap-2 flex-1">
+        {/* Chart Section */}
+        <div className="md:col-span-2 space-y-1.5 md:space-y-2">
           {/* Trading Chart */}
           <div 
-            className="glass-card p-2 sm:p-3 md:p-3 cursor-pointer hover:bg-white/10 transition-colors overflow-hidden"
+            className="glass-card p-2 sm:p-2.5 cursor-pointer hover:bg-white/10 transition-colors overflow-hidden"
             onClick={() => router.push('/trade')}
           >
-            <h2 className="text-xs sm:text-base font-semibold mb-2">BTC/USD</h2>
-            
-            {/* TradingView Chart Placeholder */}
-            <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-48 sm:h-56 md:h-64" />
+            <h2 className="text-xs sm:text-sm font-semibold mb-1.5">BTC/USD</h2>
+            <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-40 sm:h-48 md:h-52" />
           </div>
 
-          {/* Market Prices - Responsive Grid */}
+          {/* Market Prices */}
           <div 
-            className="glass-card p-3 cursor-pointer hover:bg-white/10 transition-colors"
+            className="glass-card p-2 sm:p-2.5 cursor-pointer hover:bg-white/10 transition-colors"
             onClick={() => router.push('/markets')}
           >
-            <h2 className="text-sm font-semibold mb-2">Market Prices</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2">
+            <h2 className="text-xs font-semibold mb-1.5">Market Prices</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {livePrices.map((crypto) => (
                 <div
                   key={crypto.symbol}
-                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push('/markets');
                   }}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="relative w-8 h-8 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="relative w-6 h-6 flex-shrink-0">
                       <Image
                         src={crypto.logo}
                         alt={crypto.name}
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 rounded-full object-cover"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6 rounded-full object-cover"
                         priority={false}
                         loading="lazy"
                       />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold">{crypto.symbol}</p>
-                      <p className="text-xs text-gray-400 truncate">{crypto.name}</p>
+                      <p className="text-[10px] font-semibold">{crypto.symbol}</p>
+                      <p className="text-[9px] text-gray-400 truncate">{crypto.name}</p>
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold">${crypto.price}</p>
-                    <p className={`text-xs flex items-center gap-0.5 ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
-                      {crypto.isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                    <p className="text-[10px] font-semibold">${crypto.price}</p>
+                    <p className={`text-[9px] flex items-center gap-0.5 ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
+                      {crypto.isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
                       {crypto.change}%
                     </p>
                   </div>
@@ -270,23 +268,23 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Quick Trade Section - Full width on mobile, 1/3 on desktop */}
-        <div className="space-y-2 md:space-y-2 lg:space-y-2">
+        {/* Quick Trade Section */}
+        <div className="space-y-1.5 md:space-y-2">
           {/* Buy/Sell Form */}
-          <div className="glass-card p-3">
-            <h2 className="text-sm font-semibold mb-2">Quick Trade</h2>
+          <div className="glass-card p-2 sm:p-2.5">
+            <h2 className="text-xs font-semibold mb-1.5">Quick Trade</h2>
 
             {/* Status Message */}
             {quickTradeMessage && (
-              <div className={`mb-2 p-2 rounded text-xs ${quickTradeMessage.type === 'success' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+              <div className={`mb-1.5 p-1.5 rounded text-[10px] ${quickTradeMessage.type === 'success' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
                 {quickTradeMessage.text}
               </div>
             )}
             
-            <div className="flex gap-1 mb-2">
+            <div className="flex gap-1 mb-1.5">
               <button 
                 onClick={() => setQuickTradeType('buy')}
-                className={`flex-1 py-2 rounded-lg font-medium text-xs min-h-[36px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex-1 py-1.5 rounded-lg font-medium text-[10px] min-h-[32px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   quickTradeType === 'buy' 
                     ? 'bg-success text-white' 
                     : 'bg-white/5 hover:bg-white/10'
@@ -296,7 +294,7 @@ export default function HomePage() {
               </button>
               <button 
                 onClick={() => setQuickTradeType('sell')}
-                className={`flex-1 py-2 rounded-lg font-medium text-xs min-h-[36px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex-1 py-1.5 rounded-lg font-medium text-[10px] min-h-[32px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   quickTradeType === 'sell' 
                     ? 'bg-danger text-white' 
                     : 'bg-white/5 hover:bg-white/10'
@@ -306,13 +304,13 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div>
-                <label className="text-xs text-gray-400 block mb-1 font-medium">Select Coin</label>
+                <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Select Coin</label>
                 <select 
                   value={quickTradeCoin}
                   onChange={(e) => setQuickTradeCoin(e.target.value)}
-                  className="w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs"
+                  className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px]"
                 >
                   <option>BTC</option>
                   <option>ETH</option>
@@ -322,28 +320,28 @@ export default function HomePage() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 block mb-1 font-medium">Amount</label>
+                <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Amount</label>
                 <input
                   type="number"
                   placeholder="0.00"
                   value={quickTradeAmount}
                   onChange={(e) => setQuickTradeAmount(e.target.value)}
-                  className="w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs"
+                  className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px]"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 block mb-1 font-medium">Price (USD)</label>
+                <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Price (USD)</label>
                 <input
                   type="number"
                   placeholder="0.00"
                   value={quickTradePrice}
                   onChange={(e) => setQuickTradePrice(e.target.value)}
-                  className="w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs"
+                  className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px]"
                 />
               </div>
 
-              <div className="flex items-center justify-between py-2 border-t border-white/10 text-xs">
+              <div className="flex items-center justify-between py-1.5 border-t border-white/10 text-[10px]">
                 <p className="text-gray-400">Total</p>
                 <p className="font-bold">${quickTradeAmount && quickTradePrice ? (parseFloat(quickTradeAmount) * parseFloat(quickTradePrice)).toFixed(2) : '0.00'}</p>
               </div>
@@ -351,40 +349,40 @@ export default function HomePage() {
               <button 
                 onClick={handleQuickTrade}
                 disabled={quickTradeLoading || !quickTradeAmount || !quickTradePrice}
-                className="w-full py-2 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-xs min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-[10px] min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {quickTradeLoading ? 'Processing...' : 'Place Order'}
               </button>
             </div>
           </div>
 
-          {/* Order Book Preview - Hidden on smaller screens */}
+          {/* Order Book Preview */}
           <div 
-            className="glass-card p-3 hidden sm:block cursor-pointer hover:bg-white/10 transition-colors"
+            className="glass-card p-2 sm:p-2.5 cursor-pointer hover:bg-white/10 transition-colors"
             onClick={() => router.push('/trade')}
           >
-            <h2 className="text-xs font-semibold mb-2">Order Book</h2>
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between text-gray-400 pb-1 border-b border-white/10">
+            <h2 className="text-[10px] font-semibold mb-1.5">Order Book</h2>
+            <div className="space-y-0.5 text-[10px]">
+              <div className="flex justify-between text-gray-400 pb-0.5 border-b border-white/10">
                 <span>Price</span>
                 <span>Amount</span>
               </div>
-              <div className="flex justify-between text-danger text-xs">
+              <div className="flex justify-between text-danger">
                 <span>43,251.20</span>
                 <span>0.125</span>
               </div>
-              <div className="flex justify-between text-danger text-xs">
+              <div className="flex justify-between text-danger">
                 <span>43,250.50</span>
                 <span>0.567</span>
               </div>
-              <div className="py-1 border-y border-white/10 text-center font-bold text-xs">
+              <div className="py-0.5 border-y border-white/10 text-center font-bold">
                 43,250.00
               </div>
-              <div className="flex justify-between text-success text-xs">
+              <div className="flex justify-between text-success">
                 <span>43,249.50</span>
                 <span>0.234</span>
               </div>
-              <div className="flex justify-between text-success text-xs">
+              <div className="flex justify-between text-success">
                 <span>43,248.80</span>
                 <span>0.456</span>
               </div>
@@ -392,30 +390,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* Trust & Stats Section */}
-      <div className="glass-card p-4 md:p-5">
-        <h2 className="text-base md:text-lg font-bold mb-4">Why Choose CryptoTrade</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="text-center p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-2xl md:text-3xl font-bold text-accent mb-1">150K+</p>
-            <p className="text-xs md:text-sm text-gray-400">Active Users</p>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-2xl md:text-3xl font-bold text-success mb-1">$2.5B+</p>
-            <p className="text-xs md:text-sm text-gray-400">Trading Volume</p>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-2xl md:text-3xl font-bold text-blue-400 mb-1">24/7</p>
-            <p className="text-xs md:text-sm text-gray-400">Market Access</p>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-2xl md:text-3xl font-bold text-purple-400 mb-1">0.1%</p>
-            <p className="text-xs md:text-sm text-gray-400">Lowest Fees</p>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }

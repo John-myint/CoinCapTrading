@@ -59,4 +59,7 @@ const portfolioSchema = new mongoose.Schema(
   }
 );
 
+portfolioSchema.index({ userId: 1 }, { unique: true });
+portfolioSchema.index({ 'holdings.cryptoSymbol': 1 });
+
 export default mongoose.models.Portfolio || mongoose.model('Portfolio', portfolioSchema);

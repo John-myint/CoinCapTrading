@@ -44,4 +44,9 @@ const tradeSchema = new mongoose.Schema(
   }
 );
 
+tradeSchema.index({ userId: 1, createdAt: -1 });
+tradeSchema.index({ transactionId: 1 });
+tradeSchema.index({ cryptoSymbol: 1 });
+tradeSchema.index({ status: 1 });
+
 export default mongoose.models.Trade || mongoose.model('Trade', tradeSchema);

@@ -1,27 +1,36 @@
 import jwt from 'jsonwebtoken';
+import config from '@/lib/config';
+import { JWTPayload } from '@/lib/types';
+import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-export function createToken(userId: string, email: string) {
+export function createToken(userId: string, email: string): string {
   return jwt.sign(
     { userId, email },
-    JWT_SECRET,
-    { expiresIn: '7d' }
+    config.jwt.secret,
+    { expiresIn: config.jwt.expiresIn } as jwt.SignOptions
   );
 }
 
-export function verifyToken(token: string) {
+export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, config.jwt.secret) as JWTPayload;
   } catch (error) {
     return null;
   }
 }
 
-export function decodeToken(token: string) {
+export function decodeToken(token: string): JWTPayload | null {
   try {
-    return jwt.decode(token);
+    return jwt.decode(token) as JWTPayload;
   } catch (error) {
     return null;
   }
+}
+
+export function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+export function generateSecureToken(): string {
+  return crypto.randomBytes(32).toString('hex');
 }

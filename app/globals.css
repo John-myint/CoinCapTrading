@@ -32,7 +32,7 @@ html {
   }
   
   .glass-card {
-    @apply glass rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 shadow-lg transition-smooth;
+    @apply glass rounded-lg p-2.5 sm:p-3 md:p-3.5 shadow-lg transition-smooth;
   }
 
   .text-responsive-xl {
@@ -48,19 +48,31 @@ html {
   }
 
   .responsive-container {
-    @apply px-3 py-4 sm:px-4 md:px-6 lg:px-8;
+    @apply px-2.5 py-2.5 sm:px-3 md:px-4 lg:px-5;
   }
 
   .responsive-pad {
-    @apply p-3 sm:p-4 md:p-6;
+    @apply p-2.5 sm:p-3 md:p-4;
   }
 
   .gap-responsive {
-    @apply gap-2 sm:gap-3 md:gap-4 lg:gap-6;
+    @apply gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3;
   }
 
   .transition-smooth {
     @apply transition-all duration-300 ease-in-out;
+  }
+
+  .mobile-content-padding {
+    padding-top: max(60px, calc(60px + env(safe-area-inset-top)));
+    padding-bottom: max(60px, calc(60px + env(safe-area-inset-bottom)));
+  }
+
+  @media (min-width: 768px) {
+    .mobile-content-padding {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
   }
 }
 

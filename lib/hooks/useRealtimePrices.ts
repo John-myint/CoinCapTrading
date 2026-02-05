@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { CoinCapAsset } from '@/lib/types';
 
 type PriceData = {
   priceUsd: number;
@@ -9,7 +10,6 @@ type PriceData = {
 
 type PriceMap = Record<string, PriceData>;
 
-// Check if we're in browser
 const isBrowser = typeof window !== 'undefined';
 
 export function useRealtimePrices(ids: string[]) {
@@ -19,7 +19,6 @@ export function useRealtimePrices(ids: string[]) {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const idsRef = useRef(ids.join(','));
 
-  // Fetch prices via REST API (more reliable)
   const fetchPrices = useCallback(async () => {
     try {
       const response = await fetch(`/api/prices?ids=${ids.join(',')}`);
@@ -30,7 +29,7 @@ export function useRealtimePrices(ids: string[]) {
       const data = await response.json();
       if (data.data && Array.isArray(data.data)) {
         const priceMap: PriceMap = {};
-        data.data.forEach((asset: any) => {
+        data.data.forEach((asset: CoinCapAsset) => {
           priceMap[asset.id] = {
             priceUsd: Number(asset.priceUsd),
             changePercent24Hr: Number(asset.changePercent24Hr),
@@ -38,11 +37,9 @@ export function useRealtimePrices(ids: string[]) {
         });
         setPrices(priceMap);
         setError(null);
-        console.log('✓ Prices updated:', Object.keys(priceMap).length, 'assets');
       }
       setIsLoading(false);
     } catch (err) {
-      console.error('✗ Failed to fetch prices:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       setIsLoading(false);
     }
@@ -51,14 +48,11 @@ export function useRealtimePrices(ids: string[]) {
   useEffect(() => {
     idsRef.current = ids.join(',');
     
-    // Fetch immediately
     fetchPrices();
 
-    // Poll every 2 seconds for real-time feel
-    // (Much more reliable than WebSocket for this API)
     pollIntervalRef.current = setInterval(() => {
       fetchPrices();
-    }, 2000);
+    }, 5000);
 
     return () => {
       if (pollIntervalRef.current) {

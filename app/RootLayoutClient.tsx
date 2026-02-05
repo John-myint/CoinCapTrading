@@ -39,14 +39,14 @@ function RootLayoutContent({
   return (
     <div className="flex min-h-screen">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:flex-col md:w-64 glass border-r border-white/10">
-        <div className="p-6 border-b border-white/10">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+      <aside className="hidden md:flex md:flex-col md:w-56 glass border-r border-white/10">
+        <div className="p-4 border-b border-white/10">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
             CryptoTrade
           </h1>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-2.5 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -54,57 +54,57 @@ function RootLayoutContent({
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   isActive ? 'bg-accent text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                <Icon size={20} />
-                <span className="font-medium">{item.name}</span>
+                <Icon size={18} />
+                <span className="font-medium text-sm">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 space-y-2 border-t border-white/10">
+        <div className="p-2.5 space-y-1 border-t border-white/10">
           <Link
             href={accountLink.href}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               pathname === accountLink.href ? 'bg-accent text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <User size={20} />
-            <span className="font-medium">{accountLink.name}</span>
+            <User size={18} />
+            <span className="font-medium text-sm">{accountLink.name}</span>
           </Link>
           
-          <div className="glass-card">
-            <p className="text-xs text-gray-400 mb-1">Portfolio Value</p>
-            <p className="text-xl font-bold">$24,567.89</p>
-            <p className="text-xs text-success">+12.5% Today</p>
+          <div className="glass-card p-2">
+            <p className="text-[10px] text-gray-400 mb-0.5">Portfolio Value</p>
+            <p className="text-base font-bold">$24,567.89</p>
+            <p className="text-[10px] text-success">+12.5% Today</p>
           </div>
         </div>
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 glass border-b border-white/10 safe-t" style={{paddingTop: 'max(0.5rem, env(safe-area-inset-top))'}}>
-        <div className="flex items-center justify-between px-3 py-3 sm:px-4">
-          <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent truncate">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 glass border-b border-white/10" style={{paddingTop: 'env(safe-area-inset-top)'}}>
+        <div className="flex items-center justify-between px-3 py-3">
+          <h1 className="text-base font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent truncate">
             CryptoTrade
           </h1>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg hover:bg-white/5 active:bg-white/10 min-h-touch min-w-touch flex items-center justify-center transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="p-1.5 rounded-lg hover:bg-white/5 active:bg-white/10 min-h-touch min-w-touch flex items-center justify-center transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[35] bg-black/80 backdrop-blur-sm overflow-y-auto" style={{top: 'max(56px, calc(56px + env(safe-area-inset-top)))'}} onClick={() => setMobileMenuOpen(false)}>
-          <div className="glass-card m-3 sm:m-4 mt-4 sm:mt-6 max-h-[calc(100vh-120px)] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <nav className="space-y-2">
+        <div className="md:hidden fixed inset-0 z-[35] bg-black/80 backdrop-blur-sm overflow-y-auto" style={{top: 'calc(60px + env(safe-area-inset-top))'}} onClick={() => setMobileMenuOpen(false)}>
+          <div className="glass-card m-2.5 mt-3 max-h-[calc(100vh-100px)] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <nav className="space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -113,25 +113,25 @@ function RootLayoutContent({
                     key={item.name}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg min-h-touch transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg min-h-touch transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                       isActive ? 'bg-accent text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <Icon size={20} />
-                    <span className="font-medium">{item.name}</span>
+                    <Icon size={18} />
+                    <span className="font-medium text-sm">{item.name}</span>
                   </Link>
                 );
               })}
-              <div className="border-t border-white/10 pt-2">
+              <div className="border-t border-white/10 pt-1">
                 <Link
                   href={accountLink.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg min-h-touch transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg min-h-touch transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     pathname === accountLink.href ? 'bg-accent text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <User size={20} />
-                  <span className="font-medium">{accountLink.name}</span>
+                  <User size={18} />
+                  <span className="font-medium text-sm">{accountLink.name}</span>
                 </Link>
               </div>
             </nav>
@@ -140,12 +140,14 @@ function RootLayoutContent({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pt-16 md:pt-0 pb-[calc(80px_+_env(safe-area-inset-bottom))] md:pb-0 min-h-screen">
+      <main 
+        className="flex-1 overflow-auto md:pt-0 md:pb-0 min-h-screen mobile-content-padding"
+      >
         {children}
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10 safe-b" style={{paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))'}}>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
         <div className="flex items-center justify-around px-1 py-2">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -154,12 +156,12 @@ function RootLayoutContent({
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-1 px-2 py-2 min-h-touch min-w-touch rounded-lg transition-smooth ${
+                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 min-h-touch min-w-touch rounded-lg transition-smooth ${
                   isActive ? 'text-accent' : 'text-gray-400'
                 }`}
               >
-                <Icon size={24} />
-                <span className="text-xs font-medium hidden xs:inline">{item.name}</span>
+                <Icon size={20} />
+                <span className="text-[10px] font-medium hidden xs:inline">{item.name}</span>
               </Link>
             );
           })}

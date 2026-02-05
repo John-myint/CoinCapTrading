@@ -45,10 +45,12 @@ const userSchema = new mongoose.Schema(
     verificationToken: {
       type: String,
       default: null,
+      select: false,
     },
     verificationTokenExpires: {
       type: Date,
       default: null,
+      select: false,
     },
     googleId: {
       type: String,
@@ -57,10 +59,12 @@ const userSchema = new mongoose.Schema(
     resetToken: {
       type: String,
       default: null,
+      select: false,
     },
     resetTokenExpires: {
       type: Date,
       default: null,
+      select: false,
     },
     language: {
       type: String,
@@ -81,16 +85,24 @@ const userSchema = new mongoose.Schema(
     twoFactorSecret: {
       type: String,
       default: null,
+      select: false,
     },
     twoFactorBackupCodes: {
       type: [String],
       default: [],
+      select: false,
     },
   },
   {
     timestamps: true,
   }
 );
+
+userSchema.index({ email: 1 });
+userSchema.index({ uid: 1 });
+userSchema.index({ referralCode: 1 });
+userSchema.index({ resetToken: 1 }, { sparse: true });
+userSchema.index({ verificationToken: 1 }, { sparse: true });
 
 // Hash password before saving
 userSchema.pre('save', async function () {
