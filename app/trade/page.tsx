@@ -2,6 +2,7 @@
 
 import { ArrowDownUp, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
+import { TradingViewChart } from '@/lib/components/TradingViewChart';
 
 const formatPrice = (value: number) => {
   if (Number.isNaN(value)) return '0.00';
@@ -98,7 +99,7 @@ export default function TradePage() {
               </div>
             </div>
             <div className="relative w-full h-[40vh] md:h-96 bg-black/20 rounded-lg border border-white/5 flex items-center justify-center">
-              <p className="text-gray-500 text-sm">TradingView chart integration</p>
+              <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-full" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
               <div className="p-3 rounded-lg bg-white/5">

@@ -3,6 +3,7 @@
 import { TrendingUp, TrendingDown, BarChart3, DollarSign, Activity } from 'lucide-react';
 import Image from 'next/image';
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
+import { TradingViewChart } from '@/lib/components/TradingViewChart';
 
 const formatPrice = (value: number) => {
   if (Number.isNaN(value)) return '0.00';
@@ -138,13 +139,7 @@ export default function HomePage() {
             </div>
             
             {/* TradingView Chart Placeholder */}
-            <div className="relative w-full h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-96 bg-black/20 rounded-lg border border-white/5 flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 size={48} className="mx-auto mb-2 text-gray-600" />
-                <p className="text-gray-500 text-sm">TradingView Chart</p>
-                <p className="text-xs text-gray-600 mt-1">Integrate with TradingView Widget</p>
-              </div>
-            </div>
+            <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-96" />
           </div>
 
           {/* Market Prices - Responsive Grid */}
