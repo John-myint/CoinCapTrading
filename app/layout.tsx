@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#0a0a0a] text-white overflow-hidden">
+      <body className="bg-[#0a0a0a] text-white">
         <RootLayoutClient>{children}</RootLayoutClient>
       </body>
     </html>

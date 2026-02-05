@@ -2,16 +2,47 @@
 
 import { TrendingUp, TrendingDown, BarChart3, DollarSign, Activity } from 'lucide-react';
 import Image from 'next/image';
+import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
+
+const formatPrice = (value: number) => {
+  if (Number.isNaN(value)) return '0.00';
+  if (value >= 1000) {
+    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  if (value >= 1) {
+    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  }
+  return value.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+};
+
+const formatChange = (value: number) => {
+  if (Number.isNaN(value)) return '+0.00';
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}`;
+};
 
 export default function HomePage() {
   const cryptoPrices = [
-    { name: 'Bitcoin', symbol: 'BTC', price: '43,250.00', change: '+2.5', isUp: true, logo: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
-    { name: 'Ethereum', symbol: 'ETH', price: '2,280.50', change: '+1.8', isUp: true, logo: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
-    { name: 'Ripple', symbol: 'XRP', price: '0.5234', change: '-0.9', isUp: false, logo: 'https://assets.coingecko.com/coins/images/44/large/xrp.png' },
-    { name: 'Cardano', symbol: 'ADA', price: '0.4567', change: '+3.2', isUp: true, logo: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' },
-    { name: 'Solana', symbol: 'SOL', price: '98.75', change: '-1.2', isUp: false, logo: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
-    { name: 'Polkadot', symbol: 'DOT', price: '6.89', change: '+0.5', isUp: true, logo: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png' },
+    { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: '43,250.00', change: '+2.5', isUp: true, logo: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
+    { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', price: '2,280.50', change: '+1.8', isUp: true, logo: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
+    { id: 'ripple', name: 'Ripple', symbol: 'XRP', price: '0.5234', change: '-0.9', isUp: false, logo: 'https://assets.coingecko.com/coins/images/44/large/xrp.png' },
+    { id: 'cardano', name: 'Cardano', symbol: 'ADA', price: '0.4567', change: '+3.2', isUp: true, logo: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' },
+    { id: 'solana', name: 'Solana', symbol: 'SOL', price: '98.75', change: '-1.2', isUp: false, logo: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
+    { id: 'polkadot', name: 'Polkadot', symbol: 'DOT', price: '6.89', change: '+0.5', isUp: true, logo: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png' },
   ];
+
+  const { prices } = useCoinCapPrices(cryptoPrices.map((coin) => coin.id));
+
+  const livePrices = cryptoPrices.map((coin) => {
+    const live = prices[coin.id];
+    if (!live) return coin;
+    return {
+      ...coin,
+      price: formatPrice(live.priceUsd),
+      change: formatChange(live.changePercent24Hr),
+      isUp: live.changePercent24Hr >= 0,
+    };
+  });
 
   const recentTransactions = [
     { id: 1, type: 'Buy', coin: 'BTC', amount: '0.025', price: '$1,081.25', time: '2m ago', status: 'Completed' },
@@ -21,12 +52,12 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen p-4 md:p-6 space-y-6">
+    <div className="min-h-screen p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Price Ticker */}
-      <div className="glass-card overflow-x-auto">
-        <div className="flex gap-6 min-w-max">
-          {cryptoPrices.slice(0, 4).map((crypto) => (
-            <div key={crypto.symbol} className="flex items-center gap-3">
+      <div className="glass-card overflow-x-auto snap-x snap-mandatory">
+        <div className="flex gap-4 sm:gap-6 min-w-max">
+          {livePrices.slice(0, 4).map((crypto) => (
+            <div key={crypto.symbol} className="flex items-center gap-3 snap-start">
               <div className="relative w-8 h-8 flex-shrink-0">
                 <Image
                   src={crypto.logo}
@@ -52,7 +83,7 @@ export default function HomePage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div className="glass-card">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-gray-400">Total Balance</p>
@@ -99,15 +130,15 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">BTC/USD</h2>
               <div className="flex gap-2">
-                <button className="text-xs px-3 py-1 rounded bg-accent text-white min-h-[32px]">1H</button>
-                <button className="text-xs px-3 py-1 rounded bg-white/5 hover:bg-white/10 min-h-[32px]">24H</button>
-                <button className="text-xs px-3 py-1 rounded bg-white/5 hover:bg-white/10 min-h-[32px]">7D</button>
-                <button className="text-xs px-3 py-1 rounded bg-white/5 hover:bg-white/10 min-h-[32px]">1M</button>
+                <button className="text-xs px-3 py-1 rounded bg-accent text-white min-h-[44px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1H</button>
+                <button className="text-xs px-3 py-1 rounded bg-white/5 hover:bg-white/10 min-h-[44px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">24H</button>
+                <button className="text-xs px-3 py-1 rounded bg-white/5 hover:bg-white/10 min-h-[44px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">7D</button>
+                <button className="text-xs px-3 py-1 rounded bg-white/5 hover:bg-white/10 min-h-[44px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1M</button>
               </div>
             </div>
             
             {/* TradingView Chart Placeholder */}
-            <div className="relative w-full h-64 md:h-96 bg-black/20 rounded-lg border border-white/5 flex items-center justify-center">
+            <div className="relative w-full h-[40vh] md:h-96 bg-black/20 rounded-lg border border-white/5 flex items-center justify-center">
               <div className="text-center">
                 <BarChart3 size={48} className="mx-auto mb-2 text-gray-600" />
                 <p className="text-gray-500 text-sm">TradingView Chart</p>
@@ -119,11 +150,11 @@ export default function HomePage() {
           {/* Market Prices - 2 Column Grid on Mobile */}
           <div className="glass-card">
             <h2 className="text-lg font-semibold mb-4">Market Prices</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {cryptoPrices.map((crypto) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {livePrices.map((crypto) => (
                 <div
                   key={crypto.symbol}
-                  className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 flex-shrink-0">
@@ -162,10 +193,10 @@ export default function HomePage() {
             <h2 className="text-lg font-semibold mb-4">Quick Trade</h2>
             
             <div className="flex gap-2 mb-4">
-              <button className="flex-1 py-2 rounded-lg bg-success text-white font-medium min-h-[44px]">
+              <button className="flex-1 py-2 rounded-lg bg-success text-white font-medium min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 Buy
               </button>
-              <button className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 font-medium min-h-[44px]">
+              <button className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 font-medium min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 Sell
               </button>
             </div>
@@ -204,7 +235,7 @@ export default function HomePage() {
                 <p className="text-lg font-bold">$0.00</p>
               </div>
 
-              <button className="w-full py-3 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 font-semibold transition-all min-h-[44px]">
+              <button className="w-full py-3 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 font-semibold transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 Place Buy Order
               </button>
             </div>
@@ -315,7 +346,7 @@ export default function HomePage() {
       </div>
 
       {/* Floating Action Button for Mobile Quick Trade */}
-      <button className="md:hidden fixed bottom-24 right-4 w-14 h-14 rounded-full bg-gradient-to-r from-accent to-purple-500 shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform">
+      <button className="md:hidden fixed bottom-[calc(96px+env(safe-area-inset-bottom))] right-4 w-14 h-14 rounded-full bg-gradient-to-r from-accent to-purple-500 shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label="Quick trade">
         <DollarSign size={24} />
       </button>
     </div>
