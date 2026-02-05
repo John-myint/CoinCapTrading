@@ -53,18 +53,18 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="responsive-container max-w-7xl mx-auto space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6 pb-4">
+    <div className="responsive-container max-w-7xl mx-auto space-y-2 sm:space-y-2 md:space-y-3 lg:space-y-3 pb-4 min-h-screen flex flex-col">
       {/* Price Ticker */}
       <div className="glass-card overflow-x-auto snap-x snap-mandatory">
-        <div className="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 min-w-max p-2 sm:p-3 md:p-4">
+        <div className="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 min-w-max p-2 sm:p-2 md:p-2">
           {livePrices.slice(0, 4).map((crypto) => (
             <div key={crypto.symbol} className="flex items-center gap-2 snap-start shrink-0">
-              <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
+              <div className="relative w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0">
                 <Image
                   src={crypto.logo}
                   alt={crypto.name}
-                  width={32}
-                  height={32}
+                  width={28}
+                  height={28}
                   className="w-full h-full rounded-full object-cover"
                   priority={false}
                   loading="lazy"
@@ -72,10 +72,10 @@ export default function HomePage() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-gray-400 truncate">{crypto.symbol}</p>
-                <p className="text-xs sm:text-sm md:text-base font-semibold truncate">${crypto.price}</p>
+                <p className="text-xs sm:text-sm font-semibold truncate">${crypto.price}</p>
               </div>
               <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
-                {crypto.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                {crypto.isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                 {crypto.change}%
               </span>
             </div>
@@ -84,94 +84,94 @@ export default function HomePage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-        <div className="glass-card">
-          <div className="flex items-center justify-between mb-2">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2 md:gap-2">
+        <div className="glass-card p-3 md:p-2">
+          <div className="flex items-center justify-between mb-1">
             <p className="text-xs text-gray-400 truncate">Total Balance</p>
-            <DollarSign size={16} className="text-accent flex-shrink-0" />
+            <DollarSign size={14} className="text-accent flex-shrink-0" />
           </div>
-          <p className="text-sm sm:text-base md:text-lg lg:text-2xl font-bold truncate">$24,567.89</p>
-          <p className="text-xs text-success truncate mt-1">+12.5% ($2,731.00)</p>
+          <p className="text-sm md:text-base font-bold truncate">$24,567.89</p>
+          <p className="text-xs text-success truncate mt-0.5">+12.5%</p>
         </div>
         
-        <div className="glass-card">
-          <div className="flex items-center justify-between mb-2">
+        <div className="glass-card p-3 md:p-2">
+          <div className="flex items-center justify-between mb-1">
             <p className="text-xs text-gray-400 truncate">24h Volume</p>
-            <BarChart3 size={16} className="text-purple-400 flex-shrink-0" />
+            <BarChart3 size={14} className="text-purple-400 flex-shrink-0" />
           </div>
-          <p className="text-sm sm:text-base md:text-lg lg:text-2xl font-bold truncate">$8,429.12</p>
-          <p className="text-xs text-gray-400 truncate mt-1">15 Transactions</p>
+          <p className="text-sm md:text-base font-bold truncate">$8,429.12</p>
+          <p className="text-xs text-gray-400 truncate mt-0.5">15 TX</p>
         </div>
         
-        <div className="glass-card">
-          <div className="flex items-center justify-between mb-2">
+        <div className="glass-card p-3 md:p-2">
+          <div className="flex items-center justify-between mb-1">
             <p className="text-xs text-gray-400 truncate">Top Gainer</p>
-            <TrendingUp size={16} className="text-success flex-shrink-0" />
+            <TrendingUp size={14} className="text-success flex-shrink-0" />
           </div>
-          <p className="text-sm sm:text-base md:text-lg lg:text-2xl font-bold">ADA</p>
-          <p className="text-xs text-success mt-1">+3.2%</p>
+          <p className="text-sm md:text-base font-bold">ADA</p>
+          <p className="text-xs text-success mt-0.5">+3.2%</p>
         </div>
         
-        <div className="glass-card">
-          <div className="flex items-center justify-between mb-2">
+        <div className="glass-card p-3 md:p-2">
+          <div className="flex items-center justify-between mb-1">
             <p className="text-xs text-gray-400 truncate">Active Orders</p>
-            <Activity size={16} className="text-blue-400 flex-shrink-0" />
+            <Activity size={14} className="text-blue-400 flex-shrink-0" />
           </div>
-          <p className="text-sm sm:text-base md:text-lg lg:text-2xl font-bold">7</p>
-          <p className="text-xs text-gray-400 mt-1">3 Pending</p>
+          <p className="text-sm md:text-base font-bold">7</p>
+          <p className="text-xs text-gray-400 mt-0.5">3 Pending</p>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 lg:gap-3 flex-1">
         {/* Chart Section - Full width on mobile, spans multiple col on larger screens */}
-        <div className="md:col-span-2 lg:col-span-2 space-y-4 md:space-y-5 lg:space-y-6">
+        <div className="md:col-span-2 lg:col-span-2 space-y-2 md:space-y-2 lg:space-y-2">
           {/* Trading Chart */}
-          <div className="glass-card">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold">BTC/USD</h2>
-              <div className="flex gap-2">
-                <button className="flex-1 sm:flex-none text-xs px-2 sm:px-3 py-2 rounded bg-accent text-white min-h-[44px] sm:min-h-[36px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1H</button>
-                <button className="flex-1 sm:flex-none text-xs px-2 sm:px-3 py-2 rounded bg-white/5 hover:bg-white/10 min-h-[44px] sm:min-h-[36px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">24H</button>
-                <button className="flex-1 sm:flex-none text-xs px-2 sm:px-3 py-2 rounded bg-white/5 hover:bg-white/10 min-h-[44px] sm:min-h-[36px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">7D</button>
-                <button className="flex-1 sm:flex-none text-xs px-2 sm:px-3 py-2 rounded bg-white/5 hover:bg-white/10 min-h-[44px] sm:min-h-[36px] md:min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1M</button>
+          <div className="glass-card p-3 md:p-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <h2 className="text-sm sm:text-base font-semibold">BTC/USD</h2>
+              <div className="flex gap-1">
+                <button className="text-xs px-2 py-1 rounded bg-accent text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1H</button>
+                <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">24H</button>
+                <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">7D</button>
+                <button className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">1M</button>
               </div>
             </div>
             
             {/* TradingView Chart Placeholder */}
-            <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-96" />
+            <TradingViewChart coinId="bitcoin" coinName="Bitcoin" height="h-56 sm:h-64 md:h-64" />
           </div>
 
           {/* Market Prices - Responsive Grid */}
-          <div className="glass-card">
-            <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-3 sm:mb-4">Market Prices</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+          <div className="glass-card p-3">
+            <h2 className="text-sm font-semibold mb-2">Market Prices</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2">
               {livePrices.map((crypto) => (
                 <div
                   key={crypto.symbol}
-                  className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 flex-shrink-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="relative w-8 h-8 flex-shrink-0">
                       <Image
                         src={crypto.logo}
                         alt={crypto.name}
-                        width={40}
-                        height={40}
-                        className="w-10 h-10 rounded-full object-cover"
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-full object-cover"
                         priority={false}
                         loading="lazy"
                       />
                     </div>
-                    <div>
-                      <p className="font-semibold">{crypto.symbol}</p>
-                      <p className="text-xs text-gray-400">{crypto.name}</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold">{crypto.symbol}</p>
+                      <p className="text-xs text-gray-400 truncate">{crypto.name}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">${crypto.price}</p>
-                    <p className={`text-xs flex items-center gap-1 justify-end ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
-                      {crypto.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  <div>
+                    <p className="text-xs font-semibold">${crypto.price}</p>
+                    <p className={`text-xs flex items-center gap-0.5 ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
+                      {crypto.isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                       {crypto.change}%
                     </p>
                   </div>
@@ -182,24 +182,24 @@ export default function HomePage() {
         </div>
 
         {/* Quick Trade Section - Full width on mobile, 1/3 on desktop */}
-        <div className="space-y-4 md:space-y-5 lg:space-y-6">
+        <div className="space-y-2 md:space-y-2 lg:space-y-2">
           {/* Buy/Sell Form */}
-          <div className="glass-card">
-            <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-4">Quick Trade</h2>
+          <div className="glass-card p-3">
+            <h2 className="text-sm font-semibold mb-2">Quick Trade</h2>
             
-            <div className="flex gap-2 mb-4">
-              <button className="flex-1 py-2 rounded-lg bg-success text-white font-medium min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <div className="flex gap-1 mb-3">
+              <button className="flex-1 py-2 rounded-lg bg-success text-white font-medium text-xs min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 Buy
               </button>
-              <button className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 font-medium min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <button className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 font-medium text-xs min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 Sell
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div>
-                <label className="text-xs text-gray-400 block mb-2 font-medium">Select Coin</label>
-                <select className="w-full px-3 sm:px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none min-h-[44px] text-sm">
+                <label className="text-xs text-gray-400 block mb-1 font-medium">Select Coin</label>
+                <select className="w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs">
                   <option>Bitcoin (BTC)</option>
                   <option>Ethereum (ETH)</option>
                   <option>Ripple (XRP)</option>
@@ -208,66 +208,58 @@ export default function HomePage() {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 block mb-2 font-medium">Amount</label>
+                <label className="text-xs text-gray-400 block mb-1 font-medium">Amount</label>
                 <input
                   type="number"
                   placeholder="0.00"
-                  className="w-full px-3 sm:px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none min-h-[44px] text-sm"
+                  className="w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 block mb-2 font-medium">Price (USD)</label>
+                <label className="text-xs text-gray-400 block mb-1 font-medium">Price (USD)</label>
                 <input
                   type="number"
                   placeholder="0.00"
-                  className="w-full px-3 sm:px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none min-h-[44px] text-sm"
+                  className="w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs"
                 />
               </div>
 
-              <div className="flex items-center justify-between py-3 border-t border-white/10">
-                <p className="text-sm text-gray-400">Total</p>
-                <p className="text-lg font-bold">$0.00</p>
+              <div className="flex items-center justify-between py-2 border-t border-white/10 text-xs">
+                <p className="text-gray-400">Total</p>
+                <p className="font-bold">$0.00</p>
               </div>
 
-              <button className="w-full py-3 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 font-semibold transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                Place Buy Order
+              <button className="w-full py-2 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 font-semibold transition-all text-xs min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                Place Order
               </button>
             </div>
           </div>
 
-          {/* Order Book Preview */}
-          <div className="glass-card hidden md:block">
-            <h2 className="text-sm sm:text-base font-semibold mb-3">Order Book</h2>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-gray-400 pb-2 border-b border-white/10">
+          {/* Order Book Preview - Hidden on smaller screens */}
+          <div className="glass-card p-3 hidden sm:block">
+            <h2 className="text-xs font-semibold mb-2">Order Book</h2>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between text-gray-400 pb-1 border-b border-white/10">
                 <span>Price</span>
                 <span>Amount</span>
               </div>
-              <div className="flex justify-between text-danger">
+              <div className="flex justify-between text-danger text-xs">
                 <span>43,251.20</span>
                 <span>0.125</span>
               </div>
-              <div className="flex justify-between text-danger">
-                <span>43,250.80</span>
-                <span>0.340</span>
-              </div>
-              <div className="flex justify-between text-danger">
+              <div className="flex justify-between text-danger text-xs">
                 <span>43,250.50</span>
                 <span>0.567</span>
               </div>
-              <div className="py-2 border-y border-white/10 text-center font-bold">
+              <div className="py-1 border-y border-white/10 text-center font-bold text-xs">
                 43,250.00
               </div>
-              <div className="flex justify-between text-success">
+              <div className="flex justify-between text-success text-xs">
                 <span>43,249.50</span>
                 <span>0.234</span>
               </div>
-              <div className="flex justify-between text-success">
-                <span>43,249.20</span>
-                <span>0.890</span>
-              </div>
-              <div className="flex justify-between text-success">
+              <div className="flex justify-between text-success text-xs">
                 <span>43,248.80</span>
                 <span>0.456</span>
               </div>
@@ -276,74 +268,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Recent Transactions - List View on Mobile, Table on Desktop */}
-      <div className="glass-card">
-        <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-3 sm:mb-4">Recent Transactions</h2>
-        
-        {/* Mobile List View */}
-        <div className="md:hidden space-y-3">
-          {recentTransactions.map((tx) => (
-            <div key={tx.id} className="p-3 rounded-lg bg-white/5 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className={`text-sm font-semibold ${tx.type === 'Buy' ? 'text-success' : 'text-danger'}`}>
-                  {tx.type} {tx.coin}
-                </span>
-                <span className={`text-xs px-2 py-1 rounded ${tx.status === 'Completed' ? 'bg-success/20 text-success' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                  {tx.status}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Amount:</span>
-                <span className="font-medium">{tx.amount}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Price:</span>
-                <span className="font-medium">{tx.price}</span>
-              </div>
-              <div className="text-xs text-gray-400 text-right">{tx.time}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-sm text-gray-400 border-b border-white/10">
-                <th className="pb-3">Type</th>
-                <th className="pb-3">Coin</th>
-                <th className="pb-3">Amount</th>
-                <th className="pb-3">Price</th>
-                <th className="pb-3">Time</th>
-                <th className="pb-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentTransactions.map((tx) => (
-                <tr key={tx.id} className="border-b border-white/5 hover:bg-white/5">
-                  <td className={`py-3 font-semibold ${tx.type === 'Buy' ? 'text-success' : 'text-danger'}`}>
-                    {tx.type}
-                  </td>
-                  <td className="py-3">{tx.coin}</td>
-                  <td className="py-3">{tx.amount}</td>
-                  <td className="py-3">{tx.price}</td>
-                  <td className="py-3 text-gray-400">{tx.time}</td>
-                  <td className="py-3">
-                    <span className={`text-xs px-3 py-1 rounded ${tx.status === 'Completed' ? 'bg-success/20 text-success' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                      {tx.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Floating Action Button for Mobile Quick Trade */}
-      <button className="md:hidden fixed bottom-[calc(96px+env(safe-area-inset-bottom))] right-4 w-14 h-14 rounded-full bg-gradient-to-r from-accent to-purple-500 shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label="Quick trade">
-        <DollarSign size={24} />
-      </button>
     </div>
   );
 }
