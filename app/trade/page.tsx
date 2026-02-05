@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { ArrowDownUp, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
 import { TradingViewChart } from '@/lib/components/TradingViewChart';
@@ -57,6 +58,7 @@ export default function TradePage() {
   const { prices } = useCoinCapPrices(['bitcoin']);
   const btcLive = prices.bitcoin;
   const livePrice = btcLive ? formatPrice(btcLive.priceUsd) : '43,250.00';
+  const livePriceNum = btcLive?.priceUsd || 43250;
   const liveChange = btcLive ? formatChange(btcLive.changePercent24Hr) : '+2.5';
   const isUp = btcLive ? btcLive.changePercent24Hr >= 0 : true;
   
@@ -65,6 +67,33 @@ export default function TradePage() {
   const low24h = btcLive?.low24Hr ? formatPrice(btcLive.low24Hr) : '42,110.55';
   const volume24h = btcLive?.volume24Hr ? formatVolume(btcLive.volume24Hr) : '$28.4B';
   const marketCap = btcLive?.marketCap ? formatVolume(btcLive.marketCap) : '$850B';
+
+  // Form state
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+  const [amount, setAmount] = useState<string>('');
+  const [price, setPrice] = useState<string>(livePriceNum.toString());
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Calculate total
+  const totalValue = amount && price ? (parseFloat(amount) * parseFloat(price)).toFixed(2) : '0.00';
+
+  // Handle amount change
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAmount(e.target.value);
+  };
+
+  // Handle price change
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrice(e.target.value);
+  };
+
+  // Handle percentage quick selection (25%, 50%, 75%, 100%)
+  const handlePercentageClick = (percentage: number) => {
+    const maxAmount = 1; // This would be wallet balance / price for buy, or holdings for sell
+    const calculatedAmount = (maxAmount * percentage) / 100;
+    setAmount(calculatedAmount.toFixed(4));
+  };
 
   return (
     <div className="min-h-screen p-3 md:p-4 space-y-2 max-w-7xl mx-auto flex flex-col">
@@ -124,10 +153,37 @@ export default function TradePage() {
 
         <div className="space-y-2">
           <div className="glass-card p-3">
+            {/* Status Message */}
+            {message && (
+              <div className={`mb-2 p-2 rounded text-xs ${message.type === 'success' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                {message.text}
+              </div>
+            )}
+
+            {/* Buy/Sell Toggle */}
             <div className="flex gap-1 mb-2">
-              <button className="flex-1 py-1.5 rounded-lg bg-success text-white font-medium text-xs min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Buy</button>
-              <button className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 font-medium text-xs min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Sell</button>
+              <button 
+                onClick={() => setTradeType('buy')}
+                className={`flex-1 py-1.5 rounded-lg font-medium text-xs min-h-[32px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  tradeType === 'buy' 
+                    ? 'bg-success text-white' 
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                Buy
+              </button>
+              <button 
+                onClick={() => setTradeType('sell')}
+                className={`flex-1 py-1.5 rounded-lg font-medium text-xs min-h-[32px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  tradeType === 'sell' 
+                    ? 'bg-danger text-white' 
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                Sell
+              </button>
             </div>
+
             <div className="space-y-2">
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Order Type</label>
@@ -136,35 +192,52 @@ export default function TradePage() {
                   <ChevronDown size={14} className="text-gray-400" />
                 </button>
               </div>
+              
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Price (USDT)</label>
                 <input
                   type="number"
                   placeholder="0.00"
+                  value={price}
+                  onChange={handlePriceChange}
                   className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs min-h-[32px]"
                 />
               </div>
+              
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Amount (BTC)</label>
                 <input
                   type="number"
                   placeholder="0.00"
+                  value={amount}
+                  onChange={handleAmountChange}
                   className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-xs min-h-[32px]"
                 />
               </div>
+              
               <div className="grid grid-cols-4 gap-1 text-xs">
-                {['25%', '50%', '75%', '100%'].map((pct) => (
-                  <button key={pct} className="py-1 rounded bg-white/5 hover:bg-white/10 text-xs min-h-[28px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                    {pct}
+                {[25, 50, 75, 100].map((pct) => (
+                  <button 
+                    key={pct}
+                    onClick={() => handlePercentageClick(pct)}
+                    className="py-1 rounded bg-white/5 hover:bg-white/10 text-xs min-h-[28px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    {pct}%
                   </button>
                 ))}
               </div>
+              
               <div className="flex items-center justify-between text-xs border-t border-white/10 pt-2">
                 <span className="text-gray-400">Est. Total</span>
-                <span className="font-semibold">$0.00</span>
+                <span className="font-semibold">${totalValue}</span>
               </div>
-              <button className="w-full py-1.5 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 font-semibold transition-all text-xs min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                Place Order
+              
+              <button 
+                onClick={() => {/* To be implemented in next step */}}
+                disabled={isLoading || !amount || !price}
+                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-xs min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                {isLoading ? 'Processing...' : 'Place Order'}
               </button>
             </div>
           </div>
