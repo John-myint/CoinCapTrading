@@ -30,7 +30,7 @@ export function useCoinCapPrices(ids: string[], refreshMs = 10000) {
     const fetchPrices = async () => {
       try {
         setError(null);
-        const response = await fetch(`https://api.coincap.io/v2/assets?ids=${idsKey}`, {
+        const response = await fetch(`/api/prices?ids=${idsKey}`, {
           signal: controller.signal,
           cache: 'no-store',
         });
