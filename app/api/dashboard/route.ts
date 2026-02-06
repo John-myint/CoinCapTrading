@@ -1,11 +1,11 @@
 import { connectDB } from '@/lib/mongodb';
 import Trade from '@/lib/models/Trade';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { auth } from '@/lib/nextAuth';
 import { PortfolioService } from '@/lib/services/portfolioService';
 import { logger } from '@/lib/utils/logger';
 import { withRateLimit } from '@/lib/middleware/rateLimit';
-import { JWTPayload, Holding } from '@/lib/types';
+import { Holding } from '@/lib/types';
 
 const log = logger.child({ module: 'DashboardRoute' });
 
@@ -16,27 +16,18 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const session = await auth();
 
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const decoded = verifyToken(token) as JWTPayload | null;
+    const portfolio = await PortfolioService.getPortfolio(session.user.id);
 
-    if (!decoded) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    const portfolio = await PortfolioService.getPortfolio(decoded.userId);
-
-    const trades = await Trade.find({ userId: decoded.userId })
+    const trades = await Trade.find({ userId: session.user.id })
       .sort({ createdAt: -1 })
       .limit(10);
 

@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, BarChart3, DollarSign, Activity } from 'lucid
 import Image from 'next/image';
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
 import { TradingViewChart } from '@/lib/components/TradingViewChart';
+import { useSession } from 'next-auth/react';
 
 const formatPrice = (value: number) => {
   if (Number.isNaN(value)) return '0.00';
@@ -26,6 +27,7 @@ const formatChange = (value: number) => {
 
 export default function HomePage() {
   const router = useRouter();
+  const { status } = useSession();
   
   // Quick Trade state
   const [quickTradeType, setQuickTradeType] = useState<'buy' | 'sell'>('buy');
@@ -80,9 +82,7 @@ export default function HomePage() {
     setQuickTradeMessage(null);
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      
-      if (!token) {
+      if (status !== 'authenticated') {
         setQuickTradeMessage({ type: 'error', text: 'Please login to place trades' });
         setQuickTradeLoading(false);
         return;
@@ -92,7 +92,6 @@ export default function HomePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           type: quickTradeType,

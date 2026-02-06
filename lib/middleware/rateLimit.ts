@@ -113,3 +113,39 @@ export async function withStrictRateLimit(
     return null;
   }
 }
+
+export async function checkStrictRateLimit(
+  identifier: string,
+  maxRequests: number = 5,
+  window: string = '1 m'
+): Promise<{ success: boolean; retryAfter?: number }> {
+  if (!config.rateLimit.enabled || !config.rateLimit.redis.url || !config.rateLimit.redis.token) {
+    return { success: true };
+  }
+
+  const redis = new Redis({
+    url: config.rateLimit.redis.url,
+    token: config.rateLimit.redis.token,
+  });
+
+  const strictRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(maxRequests, window as any),
+    analytics: true,
+    prefix: '@upstash/ratelimit-strict',
+  });
+
+  try {
+    const { success, reset } = await strictRatelimit.limit(identifier);
+    if (success) {
+      return { success: true };
+    }
+    return {
+      success: false,
+      retryAfter: Math.ceil((reset - Date.now()) / 1000),
+    };
+  } catch (error) {
+    logger.error({ error }, 'Strict rate limit check failed');
+    return { success: true };
+  }
+}

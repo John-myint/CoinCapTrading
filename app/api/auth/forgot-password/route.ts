@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateSecureToken, hashToken } from '@/lib/auth';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { logger } from '@/lib/utils/logger';
+import { forgotPasswordSchema } from '@/lib/validation/schemas';
 
 const log = logger.child({ module: 'ForgotPasswordRoute' });
 
@@ -15,14 +16,16 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    const { email } = await request.json();
-
-    if (!email) {
+    const body = await request.json();
+    const validationResult = forgotPasswordSchema.safeParse(body);
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Validation failed', details: validationResult.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+
+    const { email } = validationResult.data;
 
     // Find user
     const user = await User.findOne({ email });
@@ -48,9 +51,9 @@ export async function POST(request: NextRequest) {
     const emailResult = await sendPasswordResetEmail(email, resetToken);
 
     if (!emailResult.success) {
-      log.warn({ email, error: emailResult.error }, 'Failed to send password reset email');
+      log.warn({ error: emailResult.error }, 'Failed to send password reset email');
     } else {
-      log.info({ email }, 'Password reset email sent successfully');
+      log.info('Password reset email sent successfully');
     }
 
     return NextResponse.json(

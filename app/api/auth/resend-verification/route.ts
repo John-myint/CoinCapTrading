@@ -56,9 +56,9 @@ export async function POST(request: NextRequest) {
     const emailResult = await sendVerificationEmail(email, verificationToken);
 
     if (!emailResult.success) {
-      log.warn({ email, error: emailResult.error }, 'Failed to resend verification email');
+      log.warn({ error: emailResult.error }, 'Failed to resend verification email');
     } else {
-      log.info({ email }, 'Verification email resent successfully');
+      log.info('Verification email resent successfully');
     }
 
     return NextResponse.json(

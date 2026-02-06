@@ -1,30 +1,27 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import speakeasy from 'speakeasy';
+import { auth } from '@/lib/nextAuth';
+import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
+import { consumeBackupCode } from '@/lib/utils/twoFactor';
+import { logger } from '@/lib/utils/logger';
+
+const log = logger.child({ module: 'TwoFADisableRoute' });
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await withStrictRateLimit(request, undefined, 5, '1 h');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const session = await auth();
 
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Verify JWT token
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
         { status: 401 }
       );
     }
@@ -39,7 +36,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(session.user.id).select(
+      '+password +twoFactorSecret +twoFactorBackupCodes'
+    );
 
     if (!user) {
       return NextResponse.json(
@@ -51,6 +50,13 @@ export async function POST(request: NextRequest) {
     if (!user.isTwoFactorEnabled) {
       return NextResponse.json(
         { error: '2FA is not enabled' },
+        { status: 400 }
+      );
+    }
+
+    if (!user.twoFactorSecret) {
+      return NextResponse.json(
+        { error: '2FA secret missing. Please re-enable 2FA.' },
         { status: 400 }
       );
     }
@@ -69,9 +75,6 @@ export async function POST(request: NextRequest) {
       }
     } else if (code) {
       // Verify 2FA code (for OAuth users or as alternative verification)
-      console.log('Attempting to verify 2FA code:', code);
-      console.log('User has 2FA secret:', !!user.twoFactorSecret);
-      
       const verified = speakeasy.totp.verify({
         secret: user.twoFactorSecret!,
         encoding: 'base32',
@@ -79,21 +82,18 @@ export async function POST(request: NextRequest) {
         window: 6, // Increased window to allow ±3 minutes time difference
       });
 
-      console.log('2FA code verification result:', verified);
-
-      // Also check backup codes
-      if (!verified && user.twoFactorBackupCodes && user.twoFactorBackupCodes.includes(code)) {
-        console.log('Code matched backup code');
-        isVerified = true;
-        // Remove used backup code
-        user.twoFactorBackupCodes = user.twoFactorBackupCodes.filter((c: string) => c !== code);
-      } else if (verified) {
-        console.log('Code verified successfully');
+      if (!verified) {
+        const { matched, nextCodes } = consumeBackupCode(user.twoFactorBackupCodes, code);
+        if (matched) {
+          isVerified = true;
+          user.twoFactorBackupCodes = nextCodes;
+        }
+      } else {
         isVerified = true;
       }
 
       if (!isVerified) {
-        console.error('2FA code verification failed for code:', code);
+        log.warn({ userId: user._id }, '2FA code verification failed');
         return NextResponse.json(
           { error: 'Invalid 2FA code. Please try a fresh code from your authenticator app.' },
           { status: 401 }
@@ -113,12 +113,14 @@ export async function POST(request: NextRequest) {
 
     await user.save();
 
+    log.info({ userId: user._id }, '2FA disabled successfully');
+
     return NextResponse.json(
       { message: '2FA disabled successfully' },
       { status: 200 }
     );
   } catch (error) {
-    console.error('2FA disable error:', error);
+    log.error({ error }, '2FA disable error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

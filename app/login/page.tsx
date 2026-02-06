@@ -15,20 +15,23 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [verificationRequired, setVerificationRequired] = useState(false);
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
 
   // Load saved credentials on component mount
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
-    const savedPassword = localStorage.getItem('rememberedPassword');
     
     if (savedEmail) {
       setEmail(savedEmail);
       setRememberMe(true);
     }
-    if (savedPassword) {
-      setPassword(savedPassword);
-    }
   }, []);
+
+  useEffect(() => {
+    setRequiresTwoFactor(false);
+    setTwoFactorToken('');
+  }, [email, password]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,22 +40,29 @@ export default function LoginPage() {
     setVerificationRequired(false);
     
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+        token: twoFactorToken || undefined,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 403) {
+      if (result?.error) {
+        if (result.error === 'EMAIL_NOT_VERIFIED') {
           setVerificationRequired(true);
-          setError(data.error || 'Please verify your email');
+          setError('Please verify your email');
+        } else if (result.error === 'TWO_FACTOR_REQUIRED') {
+          setRequiresTwoFactor(true);
+          setError('Two-factor authentication required');
+        } else if (result.error === 'INVALID_2FA') {
+          setRequiresTwoFactor(true);
+          setError('Invalid two-factor authentication code');
+        } else if (result.error === 'RATE_LIMITED') {
+          setError('Too many login attempts. Please try again later.');
+        } else if (result.error === 'CredentialsSignin') {
+          setError('Invalid credentials');
         } else {
-          setError(data.error || 'Login failed');
+          setError('Login failed');
         }
         setIsLoading(false);
         return;
@@ -61,15 +71,12 @@ export default function LoginPage() {
       // Save credentials if "Remember me" is checked
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
-        localStorage.setItem('rememberedPassword', password);
       } else {
         // Clear saved credentials if not checked
         localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
       }
 
-      // Save token to localStorage
-      localStorage.setItem('token', data.token);
+      localStorage.removeItem('rememberedPassword');
 
       // Redirect to home page on successful login
       router.push('/');
@@ -145,6 +152,27 @@ export default function LoginPage() {
                 />
               </div>
             </div>
+
+            {requiresTwoFactor && (
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Two-Factor Code</label>
+                <input
+                  type="text"
+                  placeholder="6-digit code or backup code"
+                  value={twoFactorToken}
+                  onChange={(e) => {
+                    const sanitized = e.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9-]/g, '')
+                      .slice(0, 10);
+                    setTwoFactorToken(sanitized);
+                  }}
+                  required
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none min-h-[44px] text-center tracking-widest"
+                  inputMode="text"
+                />
+              </div>
+            )}
 
             {/* Password Input */}
             <div>

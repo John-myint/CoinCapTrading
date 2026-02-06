@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Eye, EyeOff, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,6 +18,12 @@ export default function ChangePasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -23,8 +31,7 @@ export default function ChangePasswordPage() {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      if (status !== 'authenticated') {
         router.push('/login');
         return;
       }
@@ -45,7 +52,6 @@ export default function ChangePasswordPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           currentPassword,

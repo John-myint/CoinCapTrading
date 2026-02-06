@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hashToken } from '@/lib/auth';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { logger } from '@/lib/utils/logger';
+import { resetPasswordSchema } from '@/lib/validation/schemas';
 
 const log = logger.child({ module: 'ResetPasswordRoute' });
 
@@ -14,29 +15,16 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    const { token, password, passwordConfirm } = await request.json();
-
-    // Validation
-    if (!token || !password || !passwordConfirm) {
+    const body = await request.json();
+    const validationResult = resetPasswordSchema.safeParse(body);
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'Validation failed', details: validationResult.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    if (password !== passwordConfirm) {
-      return NextResponse.json(
-        { error: 'Passwords do not match' },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
-    }
+    const { token, password } = validationResult.data;
 
     // Hash the token to match the stored hashed version
     const hashedToken = hashToken(token);

@@ -1,42 +1,30 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import { auth } from '@/lib/nextAuth';
+import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
+import { generateBackupCodes, hashBackupCodes } from '@/lib/utils/twoFactor';
+import { logger } from '@/lib/utils/logger';
 
-// Generate random backup codes
-function generateBackupCodes(count: number = 10): string[] {
-  const codes: string[] = [];
-  for (let i = 0; i < count; i++) {
-    // Generate 8-character alphanumeric code
-    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
-    // Format as XXXX-XXXX
-    codes.push(`${code.substring(0, 4)}-${code.substring(4, 8)}`);
-  }
-  return codes;
-}
+const log = logger.child({ module: 'TwoFARegenerateBackupCodesRoute' });
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await withStrictRateLimit(request, undefined, 5, '1 h');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
-    // Get token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Missing or invalid authorization header' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.substring(7);
-
-    // Verify and decode token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-
     // Fetch user from database
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(session.user.id);
 
     if (!user) {
       return NextResponse.json(
@@ -54,10 +42,13 @@ export async function POST(request: NextRequest) {
 
     // Generate new backup codes
     const newBackupCodes = generateBackupCodes(10);
+    const hashedBackupCodes = hashBackupCodes(newBackupCodes);
     
     // Update user with new backup codes
-    user.twoFactorBackupCodes = newBackupCodes;
+    user.twoFactorBackupCodes = hashedBackupCodes;
     await user.save();
+
+    log.info({ userId: user._id }, 'Backup codes regenerated successfully');
 
     return NextResponse.json(
       {
@@ -67,15 +58,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('Regenerate backup codes error:', error);
-
-    if (error.name === 'JsonWebTokenError') {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
+    log.error({ error }, 'Regenerate backup codes error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

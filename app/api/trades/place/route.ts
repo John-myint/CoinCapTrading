@@ -1,11 +1,10 @@
 import { connectDB } from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { auth } from '@/lib/nextAuth';
 import { withRateLimit } from '@/lib/middleware/rateLimit';
 import { tradeSchema } from '@/lib/validation/schemas';
 import { PortfolioService } from '@/lib/services/portfolioService';
 import { logger } from '@/lib/utils/logger';
-import { JWTPayload } from '@/lib/types';
 
 const log = logger.child({ module: 'TradeRoute' });
 
@@ -16,20 +15,11 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const session = await auth();
 
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const decoded = verifyToken(token) as JWTPayload | null;
-
-    if (!decoded) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
         { status: 401 }
       );
     }
@@ -49,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const { type, cryptoSymbol, amount, pricePerUnit } = validationResult.data;
 
-    const result = await PortfolioService.executeTrade(decoded.userId, {
+    const result = await PortfolioService.executeTrade(session.user.id, {
       type,
       cryptoSymbol,
       amount,
@@ -57,7 +47,7 @@ export async function POST(request: NextRequest) {
     });
 
     log.info(
-      { userId: decoded.userId, type, cryptoSymbol, amount, pricePerUnit },
+      { userId: session.user.id, type, cryptoSymbol, amount, pricePerUnit },
       'Trade executed successfully'
     );
 

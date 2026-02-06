@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
 
 interface Holding {
   cryptoSymbol: string;
@@ -53,6 +54,7 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,20 +63,16 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/login');
+        if (status !== 'authenticated') {
           return;
         }
 
         const response = await fetch('/api/dashboard', {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
         });
 
         if (response.status === 401) {
+          await signOut({ redirect: false });
           router.push('/login');
           return;
         }
@@ -95,8 +93,13 @@ export default function DashboardPage() {
       }
     };
 
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+
     loadDashboard();
-  }, [router]);
+  }, [router, status]);
 
   if (isLoading) {
     return (

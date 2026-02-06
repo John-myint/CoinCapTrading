@@ -1,58 +1,39 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { auth } from '@/lib/nextAuth';
+import { changePasswordSchema } from '@/lib/validation/schemas';
+import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await withStrictRateLimit(request, undefined, 5, '1 h');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const session = await auth();
 
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Verify JWT token
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    } catch (error) {
+    const body = await request.json();
+    const validationResult = changePasswordSchema.safeParse(body);
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    const { currentPassword, newPassword, confirmPassword } = await request.json();
-
-    // Validate inputs
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'Validation failed', details: validationResult.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    if (newPassword !== confirmPassword) {
-      return NextResponse.json(
-        { error: 'Passwords do not match' },
-        { status: 400 }
-      );
-    }
-
-    if (newPassword.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
-    }
+    const { currentPassword, newPassword } = validationResult.data;
 
     // Find user
-    const user = await User.findById(decoded.userId).select('+password');
+    const user = await User.findById(session.user.id).select('+password');
 
     if (!user) {
       return NextResponse.json(

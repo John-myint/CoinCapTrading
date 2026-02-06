@@ -1,30 +1,24 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { auth } from '@/lib/nextAuth';
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    // Get token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const session = await auth();
+
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Missing or invalid authorization header' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.substring(7);
-
-    // Verify and decode token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-
     // Fetch user from database using userId from token
-    const user = await User.findById(decoded.userId).select(
-      'fullName email uid referralCode isVerified isTwoFactorEnabled accountStatus language withdrawalAddress createdAt'
+    const user = await User.findById(session.user.id).select(
+      '+password fullName email uid referralCode isVerified isTwoFactorEnabled accountStatus language withdrawalAddress profilePicture createdAt'
     );
 
     if (!user) {
@@ -48,6 +42,7 @@ export async function GET(request: NextRequest) {
           accountStatus: user.accountStatus,
           language: user.language,
           withdrawalAddress: user.withdrawalAddress,
+          profilePicture: user.profilePicture,
           createdAt: user.createdAt,
         },
       },
@@ -55,13 +50,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Get user error:', error);
-
-    if (error.name === 'JsonWebTokenError') {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
 
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useLanguageSwitch } from '@/lib/useLanguageSwitch';
+import { useSession, signOut } from 'next-auth/react';
 import {
   User,
   Lock,
@@ -44,6 +45,7 @@ type TabType = 'profile' | 'settings' | 'security';
 export default function AccountPage() {
   const t = useTranslations('account');
   const router = useRouter();
+  const { status } = useSession();
   const { changeLanguage, locale } = useLanguageSwitch();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -73,30 +75,22 @@ export default function AccountPage() {
   // Load user profile
   const loadProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
+      if (status !== 'authenticated') {
         return;
       }
 
       const response = await fetch('/api/auth/me', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       // Handle authentication errors (401) and user not found (404)
       if (response.status === 401 || response.status === 404) {
-        // Clear invalid token
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        
         // Show message if user was deleted
         if (response.status === 404) {
           alert('Your account was not found. Please register or log in again.');
         }
-        
+
+        await signOut({ redirect: false });
         router.push('/login');
         return;
       }
@@ -123,8 +117,12 @@ export default function AccountPage() {
   };
 
   useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
     loadProfile();
-  }, [router]);
+  }, [router, status]);
 
   // Refresh profile when returning to the page (e.g., after 2FA setup)
   useEffect(() => {
@@ -186,13 +184,12 @@ export default function AccountPage() {
     setSuccess('');
 
     try {
-      const response = await fetch('/api/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
           fullName,
           language,
           withdrawalAddress,
@@ -225,8 +222,7 @@ export default function AccountPage() {
     setIsSaving(true);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      if (status !== 'authenticated') {
         router.push('/login');
         return;
       }
@@ -247,7 +243,6 @@ export default function AccountPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           currentPassword,
@@ -275,10 +270,10 @@ export default function AccountPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
     localStorage.removeItem('rememberedEmail');
     localStorage.removeItem('rememberedPassword');
+    await signOut({ redirect: false });
     router.push('/login');
   };
 

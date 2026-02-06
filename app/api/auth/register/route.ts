@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
     const emailResult = await sendVerificationEmail(email, verificationToken);
     
     if (!emailResult.success) {
-      log.warn({ email, error: emailResult.error }, 'Failed to send verification email');
+      log.warn({ error: emailResult.error }, 'Failed to send verification email');
       
       // In development: Auto-verify if email fails (Resend test domain restriction)
       if (process.env.NODE_ENV === 'development' && emailResult.error?.includes('testing emails')) {
-        log.info({ email }, 'Auto-verifying user (dev mode - email restriction)');
+        log.info('Auto-verifying user (dev mode - email restriction)');
         user.isVerified = true;
         user.verificationToken = null;
         user.verificationTokenExpires = null;
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    log.info({ userId: user._id, email: user.email }, 'User registered successfully');
+    log.info({ userId: user._id }, 'User registered successfully');
 
     const response = NextResponse.json(
       {
@@ -84,7 +84,14 @@ export async function POST(request: NextRequest) {
     );
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      return NextResponse.json(
+        { error: 'Email, user ID, or referral code already exists' },
+        { status: 409 }
+      );
+    }
+
     log.error({ error }, 'Register error');
     return NextResponse.json(
       { error: 'Registration failed' },

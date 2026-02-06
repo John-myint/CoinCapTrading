@@ -5,6 +5,7 @@ import { ArrowDownUp, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
 import { TradingViewChart } from '@/lib/components/TradingViewChart';
 import { AVAILABLE_CRYPTOS, ORDER_BOOK_DATA, PERCENTAGE_OPTIONS, type CryptoType } from '@/lib/constants';
+import { useSession } from 'next-auth/react';
 
 const formatPrice = (value: number) => {
   if (Number.isNaN(value)) return '0.00';
@@ -43,6 +44,7 @@ const recentTrades = [
 ];
 
 export default function TradePage() {
+  const { status } = useSession();
   const [selectedCrypto, setSelectedCrypto] = useState<CryptoType>(AVAILABLE_CRYPTOS[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
@@ -74,6 +76,12 @@ export default function TradePage() {
       setPrice(livePriceNum.toString());
     }
   }, [livePriceNum, selectedCrypto.id]);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      setMessage({ type: 'error', text: 'Please login to place trades' });
+    }
+  }, [status]);
 
   // Calculate total with useMemo
   const totalValue = useMemo(() => {
@@ -126,10 +134,7 @@ export default function TradePage() {
     setMessage(null);
 
     try {
-      // Get auth token from localStorage
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      
-      if (!token) {
+      if (status !== 'authenticated') {
         setMessage({ type: 'error', text: 'Please login to place trades' });
         setIsLoading(false);
         return;
@@ -139,7 +144,6 @@ export default function TradePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           type: tradeType,

@@ -1,34 +1,24 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import { verifyToken } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/nextAuth';
+import { profileUpdateSchema } from '@/lib/validation/schemas';
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    // Get token from cookie or header
-    const token = request.cookies.get('token')?.value || request.headers.get('authorization')?.split(' ')[1];
+    const session = await auth();
 
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Verify token
-    const decoded: any = verifyToken(token);
-
-    if (!decoded) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
     // Get user
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(session.user.id);
 
     if (!user) {
       return NextResponse.json(
@@ -47,6 +37,7 @@ export async function GET(request: NextRequest) {
           referralCode: user.referralCode,
           language: user.language,
           withdrawalAddress: user.withdrawalAddress,
+          profilePicture: user.profilePicture,
           isVerified: user.isVerified,
           createdAt: user.createdAt,
         },
@@ -66,35 +57,34 @@ export async function PUT(request: NextRequest) {
   try {
     await connectDB();
 
-    // Get token from cookie or header
-    const token = request.cookies.get('token')?.value || request.headers.get('authorization')?.split(' ')[1];
+    const session = await auth();
 
-    if (!token) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Verify token
-    const decoded: any = verifyToken(token);
-
-    if (!decoded) {
+    const body = await request.json();
+    const validationResult = profileUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
+        { error: 'Validation failed', details: validationResult.error.flatten().fieldErrors },
+        { status: 400 }
       );
     }
 
-    const { fullName, language, withdrawalAddress } = await request.json();
+    const { fullName, language, withdrawalAddress, profilePicture } = validationResult.data;
 
     // Update user
     const user = await User.findByIdAndUpdate(
-      decoded.userId,
+      session.user.id,
       {
         ...(fullName && { fullName }),
         ...(language && { language }),
         ...(withdrawalAddress && { withdrawalAddress }),
+        ...(profilePicture !== undefined && { profilePicture }),
       },
       { new: true }
     );
@@ -117,6 +107,7 @@ export async function PUT(request: NextRequest) {
           referralCode: user.referralCode,
           language: user.language,
           withdrawalAddress: user.withdrawalAddress,
+          profilePicture: user.profilePicture,
         },
       },
       { status: 200 }

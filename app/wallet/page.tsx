@@ -15,6 +15,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { fetchRealCryptoData, formatPrice, formatLargeNumber } from '@/lib/mockCryptoData';
+import { useSession, signOut } from 'next-auth/react';
 
 interface Holding {
   cryptoSymbol: string;
@@ -56,6 +57,7 @@ type TabType = 'overview' | 'assets' | 'transactions';
 
 export default function WalletPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [data, setData] = useState<WalletData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -117,20 +119,16 @@ export default function WalletPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/login');
+        if (status !== 'authenticated') {
           return;
         }
 
         const response = await fetch('/api/dashboard', {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
         });
 
         if (response.status === 401) {
+          await signOut({ redirect: false });
           router.push('/login');
           return;
         }
@@ -168,8 +166,13 @@ export default function WalletPage() {
       }
     };
 
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+
     loadData();
-  }, [router]);
+  }, [router, status]);
 
   if (isLoading) {
     return (

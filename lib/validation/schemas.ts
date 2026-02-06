@@ -10,7 +10,11 @@ export const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  passwordConfirm: z.string().min(6, 'Password must be at least 6 characters'),
   referralCode: z.string().optional(),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: 'Passwords do not match',
+  path: ['passwordConfirm'],
 });
 
 export const tradeSchema = z.object({
@@ -22,11 +26,11 @@ export const tradeSchema = z.object({
     .max(10, 'Crypto symbol is too long')
     .regex(/^[A-Z]+$/, 'Crypto symbol must be uppercase letters only')
     .transform(val => val.toUpperCase()),
-  amount: z.number()
+  amount: z.coerce.number()
     .positive('Amount must be positive')
     .max(1000000000, 'Amount is too large')
     .refine(val => Number.isFinite(val), 'Amount must be a valid number'),
-  pricePerUnit: z.number()
+  pricePerUnit: z.coerce.number()
     .positive('Price must be positive')
     .max(10000000, 'Price is too large')
     .refine(val => Number.isFinite(val), 'Price must be a valid number'),
@@ -39,17 +43,26 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  passwordConfirm: z.string().min(6, 'Password must be at least 6 characters'),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: 'Passwords do not match',
+  path: ['passwordConfirm'],
 });
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string().min(6, 'Password must be at least 6 characters'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
 
 export const profileUpdateSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').optional(),
   language: z.string().optional(),
   withdrawalAddress: z.string().optional(),
+  profilePicture: z.string().nullable().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

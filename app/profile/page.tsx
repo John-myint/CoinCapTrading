@@ -6,7 +6,7 @@ import {
   User, Lock, Copy, LogOut, ArrowLeft, Mail, Save, X, 
   Globe, MapPin, Shield, Calendar, Award, CheckCircle, AlertCircle 
 } from 'lucide-react';
-import Image from 'next/image';
+import { useSession, signOut } from 'next-auth/react';
 
 interface UserProfile {
   id: string;
@@ -25,6 +25,7 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { status } = useSession();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -41,34 +42,31 @@ export default function ProfilePage() {
 
   // Load user profile
   useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+  }, [status, router]);
+
+  useEffect(() => {
     const loadProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/login');
+        if (status !== 'authenticated') {
           return;
         }
 
-        // Get user ID from token (in production, decode properly)
-        // For now, we'll make a request that includes the token
         const response = await fetch('/api/auth/me', {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
         });
 
         // Handle authentication errors (401) and user not found (404)
         if (response.status === 401 || response.status === 404) {
-          // Clear invalid token
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          
           // Show message if user was deleted
           if (response.status === 404) {
             alert('Your account was not found. Please register or log in again.');
           }
-          
+
+          await signOut({ redirect: false });
           router.push('/login');
           return;
         }
@@ -96,7 +94,7 @@ export default function ProfilePage() {
     };
 
     loadProfile();
-  }, [router]);
+  }, [router, status]);
 
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -137,13 +135,12 @@ export default function ProfilePage() {
     setError('');
 
     try {
-      const response = await fetch('/api/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
           fullName,
           language,
           withdrawalAddress,
@@ -169,9 +166,9 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     localStorage.removeItem('rememberedEmail');
     localStorage.removeItem('rememberedPassword');
+    void signOut({ redirect: false });
     router.push('/login');
   };
 

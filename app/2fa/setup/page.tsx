@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Copy, AlertCircle, CheckCircle, Shield } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 export default function TwoFactorSetupPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [step, setStep] = useState<'start' | 'qr' | 'verify' | 'success'>('start');
   const [qrCode, setQrCode] = useState('');
   const [secret, setSecret] = useState('');
@@ -15,22 +17,21 @@ export default function TwoFactorSetupPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
   const handleStartSetup = async () => {
     setIsLoading(true);
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
       const response = await fetch('/api/auth/2fa/setup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -58,12 +59,6 @@ export default function TwoFactorSetupPage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
       if (verificationCode.length !== 6) {
         setError('Verification code must be 6 digits');
         setIsLoading(false);
@@ -74,10 +69,8 @@ export default function TwoFactorSetupPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          secret,
           code: verificationCode,
         }),
       });

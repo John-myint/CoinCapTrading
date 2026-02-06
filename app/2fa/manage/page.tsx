@@ -3,13 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, ArrowLeft, Copy, AlertTriangle, Check, Key, RefreshCw } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Manage2FAPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [backupCodeCount, setBackupCodeCount] = useState(0);
+  const [hasBackupCodes, setHasBackupCodes] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
@@ -18,26 +22,21 @@ export default function Manage2FAPage() {
   const [hasPassword, setHasPassword] = useState(true); // Whether user has password (OAuth vs email/password)
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+    if (status === 'authenticated') {
+      checkAuth();
+    }
+  }, [status, router]);
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      const response = await fetch('/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch('/api/auth/me');
 
       if (response.status === 401 || response.status === 404) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        await signOut({ redirect: false });
         router.push('/login');
         return;
       }
@@ -66,16 +65,12 @@ export default function Manage2FAPage() {
 
   const loadBackupCodes = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/auth/2fa/backup-codes', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch('/api/auth/2fa/backup-codes');
 
       if (response.ok) {
         const data = await response.json();
-        setBackupCodes(data.backupCodes || []);
+        setBackupCodeCount(data.backupCodeCount || 0);
+        setHasBackupCodes(!!data.hasBackupCodes);
       }
     } catch (error) {
       console.error('Load backup codes error:', error);
@@ -102,17 +97,15 @@ export default function Manage2FAPage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/auth/2fa/regenerate-backup-codes', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (response.ok) {
         const data = await response.json();
         setBackupCodes(data.backupCodes);
+        setBackupCodeCount(data.backupCodes?.length || 0);
+        setHasBackupCodes(true);
         setSuccess('Backup codes regenerated successfully! Please save them in a safe place.');
         setTimeout(() => setSuccess(''), 5000);
       } else {
@@ -141,25 +134,18 @@ export default function Manage2FAPage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      
       // Prepare request body based on user type
       const requestBody = hasPassword 
         ? { password: disablePassword }
         : { code: disable2FACode };
-      
-      console.log('Disabling 2FA with:', hasPassword ? 'password' : '2FA code');
-      
+
       const response = await fetch('/api/auth/2fa/disable', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(requestBody),
       });
-
-      console.log('Disable 2FA response status:', response.status);
 
       if (response.ok) {
         setSuccess('2FA has been disabled successfully!');
@@ -168,7 +154,6 @@ export default function Manage2FAPage() {
         }, 2000);
       } else {
         const errorData = await response.json();
-        console.error('Disable 2FA error:', errorData);
         setError(errorData.error || 'Failed to disable 2FA');
       }
     } catch (error) {
@@ -282,14 +267,19 @@ export default function Manage2FAPage() {
                 </div>
               </>
             ) : (
-              <div className="p-6 text-center bg-white/5 border border-white/10 rounded-lg">
-                <p className="text-gray-400">No backup codes available</p>
-                <button
-                  onClick={handleRegenerateBackupCodes}
-                  className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-colors"
-                >
-                  Generate Backup Codes
-                </button>
+              <div className="p-4 bg-white/5 border border-white/10 rounded-lg space-y-2">
+                <p className="text-gray-400 text-sm">
+                  Backup codes are only shown once when generated.
+                </p>
+                {hasBackupCodes ? (
+                  <p className="text-gray-500 text-xs">
+                    You currently have {backupCodeCount} backup codes stored. Regenerate to get a new set.
+                  </p>
+                ) : (
+                  <p className="text-gray-500 text-xs">
+                    No backup codes stored yet. Generate a new set to secure your account.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -341,9 +331,15 @@ export default function Manage2FAPage() {
                     <input
                       type="text"
                       value={disable2FACode}
-                      onChange={(e) => setDisable2FACode(e.target.value)}
-                      placeholder="Enter 6-digit code"
-                      maxLength={6}
+                      onChange={(e) => {
+                        const sanitized = e.target.value
+                          .toUpperCase()
+                          .replace(/[^A-Z0-9-]/g, '')
+                          .slice(0, 10);
+                        setDisable2FACode(sanitized);
+                      }}
+                      placeholder="Enter code or backup code"
+                      maxLength={10}
                       className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 text-center text-2xl tracking-widest font-mono"
                     />
                   </>

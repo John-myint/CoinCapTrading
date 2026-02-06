@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { customAlphabet } from 'nanoid';
+
+const generateUid = customAlphabet('0123456789', 8);
+const generateReferral = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 7);
 
 const userSchema = new mongoose.Schema(
   {
@@ -26,12 +30,12 @@ const userSchema = new mongoose.Schema(
     uid: {
       type: String,
       unique: true,
-      default: () => Math.floor(Math.random() * 10000000).toString(),
+      default: () => generateUid(),
     },
     referralCode: {
       type: String,
       unique: true,
-      default: () => 'REF' + Math.random().toString(36).substring(2, 9).toUpperCase(),
+      default: () => `REF${generateReferral()}`,
     },
     accountStatus: {
       type: String,
@@ -84,6 +88,16 @@ const userSchema = new mongoose.Schema(
     },
     twoFactorSecret: {
       type: String,
+      default: null,
+      select: false,
+    },
+    twoFactorTempSecret: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    twoFactorTempSecretExpires: {
+      type: Date,
       default: null,
       select: false,
     },

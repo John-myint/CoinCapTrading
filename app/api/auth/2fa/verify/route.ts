@@ -1,54 +1,78 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy';
+import { auth } from '@/lib/nextAuth';
+import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
+import { generateBackupCodes, hashBackupCodes } from '@/lib/utils/twoFactor';
+import { logger } from '@/lib/utils/logger';
 
-function generateBackupCodes(count: number = 10): string[] {
-  const codes: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-    codes.push(code);
-  }
-  return codes;
-}
+const log = logger.child({ module: 'TwoFAVerifyRoute' });
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await withStrictRateLimit(request, undefined, 5, '1 h');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-
-    if (!token) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Verify JWT token
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    } catch (error) {
+    const { code } = await request.json();
+
+    if (!code) {
       return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
+        { error: 'Verification code required' },
+        { status: 400 }
       );
     }
 
-    const { secret, code } = await request.json();
+    // Find user and update 2FA settings
+    const user = await User.findById(session.user.id).select(
+      '+twoFactorTempSecret +twoFactorTempSecretExpires +twoFactorBackupCodes'
+    );
 
-    if (!secret || !code) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Secret and verification code required' },
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    if (user.isTwoFactorEnabled) {
+      return NextResponse.json(
+        { error: '2FA is already enabled' },
+        { status: 400 }
+      );
+    }
+
+    if (!user.twoFactorTempSecret || !user.twoFactorTempSecretExpires) {
+      return NextResponse.json(
+        { error: 'No pending 2FA setup found. Please restart setup.' },
+        { status: 400 }
+      );
+    }
+
+    if (user.twoFactorTempSecretExpires.getTime() < Date.now()) {
+      user.twoFactorTempSecret = null;
+      user.twoFactorTempSecretExpires = null;
+      await user.save();
+
+      return NextResponse.json(
+        { error: '2FA setup expired. Please restart setup.' },
         { status: 400 }
       );
     }
 
     // Verify the code
     const verified = speakeasy.totp.verify({
-      secret,
+      secret: user.twoFactorTempSecret,
       encoding: 'base32',
       token: code,
       window: 2,
@@ -61,25 +85,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user and update 2FA settings
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
     // Generate backup codes
     const backupCodes = generateBackupCodes();
+    const hashedBackupCodes = hashBackupCodes(backupCodes);
 
     // Save 2FA settings
-    user.twoFactorSecret = secret;
+    user.twoFactorSecret = user.twoFactorTempSecret;
     user.isTwoFactorEnabled = true;
-    user.twoFactorBackupCodes = backupCodes;
+    user.twoFactorBackupCodes = hashedBackupCodes;
+    user.twoFactorTempSecret = null;
+    user.twoFactorTempSecretExpires = null;
 
     await user.save();
+
+    log.info({ userId: user._id }, '2FA enabled successfully');
 
     return NextResponse.json(
       {
@@ -90,7 +109,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('2FA verify error:', error);
+    log.error({ error }, '2FA verify error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

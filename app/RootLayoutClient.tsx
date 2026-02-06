@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
+import { SessionProvider } from 'next-auth/react';
 
 interface RootLayoutClientProps {
   children: React.ReactNode;
@@ -177,8 +178,10 @@ export function RootLayoutClient({
   messages,
 }: RootLayoutClientProps) {
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <RootLayoutContent>{children}</RootLayoutContent>
-    </NextIntlClientProvider>
+    <SessionProvider>
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <RootLayoutContent>{children}</RootLayoutContent>
+      </NextIntlClientProvider>
+    </SessionProvider>
   );
 }
