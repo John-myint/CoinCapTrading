@@ -39,10 +39,35 @@ const CACHE_TTL_MS = 30_000; // 30 seconds — shared between all instances
 const SYMBOL_MAP: Record<string, string> = {
   bitcoin: 'BTCUSDT',
   ethereum: 'ETHUSDT',
-  ripple: 'XRPUSDT',
-  cardano: 'ADAUSDT',
+  binancecoin: 'BNBUSDT',
   solana: 'SOLUSDT',
+  ripple: 'XRPUSDT',
+  dogecoin: 'DOGEUSDT',
+  cardano: 'ADAUSDT',
+  tron: 'TRXUSDT',
+  'avalanche-2': 'AVAXUSDT',
+  chainlink: 'LINKUSDT',
+  'shiba-inu': 'SHIBUSDT',
   polkadot: 'DOTUSDT',
+  'bitcoin-cash': 'BCHUSDT',
+  uniswap: 'UNIUSDT',
+  litecoin: 'LTCUSDT',
+  near: 'NEARUSDT',
+  'matic-network': 'MATICUSDT',
+  stellar: 'XLMUSDT',
+  cosmos: 'ATOMUSDT',
+  'internet-computer': 'ICPUSDT',
+  filecoin: 'FILUSDT',
+  aptos: 'APTUSDT',
+  arbitrum: 'ARBUSDT',
+  optimism: 'OPUSDT',
+  'hedera-hashgraph': 'HBARUSDT',
+  algorand: 'ALGOUSDT',
+  vechain: 'VETUSDT',
+  'render-token': 'RNDRUSDT',
+  sui: 'SUIUSDT',
+  pepe: 'PEPEUSDT',
+  'pax-gold': 'PAXGUSDT',
 };
 
 const REVERSE_SYMBOL_MAP: Record<string, string> = Object.fromEntries(
@@ -153,7 +178,7 @@ async function fetchFromCoinGeckoSimple(idsArray: string[]): Promise<PriceResult
 // --- Strategy 2: CoinGecko /coins/markets (richer data) ---
 async function fetchFromCoinGecko(idsArray: string[]): Promise<PriceResult[]> {
   const geckoIds = idsArray.map((id) => id.toLowerCase()).join(',');
-  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${geckoIds}&order=market_cap_desc&per_page=20&page=1&sparkline=false&price_change_percentage=24h`;
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${geckoIds}&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`;
 
   const { controller, clear } = makeAbortController(8000);
   try {
@@ -231,9 +256,34 @@ async function fetchFromKraken(idsArray: string[]): Promise<PriceResult[]> {
     bitcoin: 'XXBTZUSD',
     ethereum: 'XETHZUSD',
     ripple: 'XXRPZUSD',
-    cardano: 'ADAUSD',
+    binancecoin: 'BNBUSD',
     solana: 'SOLUSD',
+    dogecoin: 'XDGUSD',
+    cardano: 'ADAUSD',
+    tron: 'TRXUSD',
+    'avalanche-2': 'AVAXUSD',
+    chainlink: 'LINKUSD',
+    'shiba-inu': 'SHIBUSD',
     polkadot: 'DOTUSD',
+    'bitcoin-cash': 'BCHUSD',
+    uniswap: 'UNIUSD',
+    litecoin: 'XLTCZUSD',
+    near: 'NEARUSD',
+    'matic-network': 'MATICUSD',
+    stellar: 'XXLMZUSD',
+    cosmos: 'ATOMUSD',
+    'internet-computer': 'ICPUSD',
+    filecoin: 'FILUSD',
+    aptos: 'APTUSD',
+    arbitrum: 'ARBUSD',
+    optimism: 'OPUSD',
+    'hedera-hashgraph': 'HBARUSD',
+    algorand: 'ALGOUSD',
+    vechain: 'VETUSD',
+    'render-token': 'RNDRUSD',
+    sui: 'SUIUSD',
+    pepe: 'PEPEUSD',
+    'pax-gold': 'PAXGUSD',
   };
 
   const pairs = idsArray.map((id) => krakenMap[id.toLowerCase()]).filter(Boolean);
@@ -327,7 +377,14 @@ export async function GET(request: Request) {
 
   // 3. Fetch from external APIs — race them
   const errors: string[] = [];
-  const allCoins = ['bitcoin', 'ethereum', 'ripple', 'cardano', 'solana', 'polkadot'];
+  const allCoins = [
+    'bitcoin', 'ethereum', 'binancecoin', 'solana', 'ripple', 'dogecoin',
+    'cardano', 'tron', 'avalanche-2', 'chainlink', 'shiba-inu', 'polkadot',
+    'bitcoin-cash', 'uniswap', 'litecoin', 'near', 'matic-network', 'stellar',
+    'cosmos', 'internet-computer', 'filecoin', 'aptos', 'arbitrum', 'optimism',
+    'hedera-hashgraph', 'algorand', 'vechain', 'render-token', 'sui', 'pepe',
+    'pax-gold',
+  ];
 
   const strategies = [
     { fn: () => fetchFromCoinGeckoSimple(allCoins), name: 'coingecko-simple' },
