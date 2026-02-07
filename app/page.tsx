@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { TrendingUp, TrendingDown, BarChart3, DollarSign, Activity } from 'lucide-react';
 import Image from 'next/image';
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
 import { TradingViewChart } from '@/lib/components/TradingViewChart';
 import { useSession } from 'next-auth/react';
+import TradeModal from '@/lib/components/TradeModal';
+import CountdownPopup from '@/lib/components/CountdownPopup';
 
 const formatPrice = (value: number) => {
   if (Number.isNaN(value)) return '0.00';
@@ -30,12 +32,37 @@ export default function HomePage() {
   const { status } = useSession();
   
   // Quick Trade state
-  const [quickTradeType, setQuickTradeType] = useState<'buy' | 'sell'>('buy');
   const [quickTradeCoin, setQuickTradeCoin] = useState('BTC');
-  const [quickTradeAmount, setQuickTradeAmount] = useState<string>('');
-  const [quickTradePrice, setQuickTradePrice] = useState<string>('');
-  const [quickTradeLoading, setQuickTradeLoading] = useState(false);
+  const [quickTradeType, setQuickTradeType] = useState<'buy' | 'sell'>('buy');
+  const [tradeModalOpen, setTradeModalOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [quickTradeMessage, setQuickTradeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Countdown popup state
+  const [countdownOpen, setCountdownOpen] = useState(false);
+  const [activeTrade, setActiveTrade] = useState<{
+    tradeId: string;
+    period: number;
+    amount: number;
+    profitPercent: number;
+  } | null>(null);
+
+  // Fetch wallet balance
+  const fetchBalance = useCallback(async () => {
+    try {
+      const res = await fetch('/api/dashboard');
+      if (res.ok) {
+        const data = await res.json();
+        setWalletBalance(data.portfolio?.accountBalance ?? 0);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchBalance();
+    }
+  }, [status, fetchBalance]);
   
   const cryptoPrices = [
     { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: '43,250.00', change: '+2.5', isUp: true, logo: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
@@ -59,71 +86,55 @@ export default function HomePage() {
     };
   });
 
-  const recentTransactions = [
-    { id: 1, type: 'Buy', coin: 'BTC', amount: '0.025', price: '$1,081.25', time: '2m ago', status: 'Completed' },
-    { id: 2, type: 'Sell', coin: 'ETH', amount: '1.5', price: '$3,420.75', time: '15m ago', status: 'Completed' },
-    { id: 3, type: 'Buy', coin: 'SOL', amount: '10', price: '$987.50', time: '1h ago', status: 'Pending' },
-    { id: 4, type: 'Sell', coin: 'ADA', amount: '500', price: '$228.35', time: '2h ago', status: 'Completed' },
-  ];
-
-  // Quick trade handlers
-  const handleQuickTrade = async () => {
-    if (!quickTradeAmount || !quickTradePrice) {
-      setQuickTradeMessage({ type: 'error', text: 'Please enter amount and price' });
+  // Open trade modal
+  const openQuickTrade = (type: 'buy' | 'sell') => {
+    if (status !== 'authenticated') {
+      router.push('/login');
       return;
     }
+    setQuickTradeType(type);
+    setTradeModalOpen(true);
+  };
 
-    if (parseFloat(quickTradeAmount) <= 0 || parseFloat(quickTradePrice) <= 0) {
-      setQuickTradeMessage({ type: 'error', text: 'Amount and price must be greater than 0' });
-      return;
-    }
-
-    setQuickTradeLoading(true);
-    setQuickTradeMessage(null);
-
+  // Handle trade confirmation from modal
+  const handleTradeConfirm = async (period: number, amount: number, profitPercent: number) => {
+    setTradeModalOpen(false);
     try {
-      if (status !== 'authenticated') {
-        setQuickTradeMessage({ type: 'error', text: 'Please login to place trades' });
-        setQuickTradeLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/trades/place', {
+      const res = await fetch('/api/trades/timed', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: quickTradeType,
           cryptoSymbol: quickTradeCoin,
-          amount: parseFloat(quickTradeAmount),
-          pricePerUnit: parseFloat(quickTradePrice),
+          amount,
+          period,
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setQuickTradeMessage({ type: 'error', text: data.error || 'Failed to place order' });
+      const data = await res.json();
+      if (!res.ok) {
+        setQuickTradeMessage({ type: 'error', text: data.error || 'Trade failed' });
+        setTimeout(() => setQuickTradeMessage(null), 4000);
         return;
       }
-
-      setQuickTradeMessage({ 
-        type: 'success', 
-        text: `${quickTradeType === 'buy' ? 'Buy' : 'Sell'} order placed!` 
-      });
-
-      setQuickTradeAmount('');
-      setTimeout(() => {
-        setQuickTradeMessage(null);
-      }, 4000);
-
-    } catch (error) {
-      console.error('Trade error:', error);
+      setWalletBalance(data.newBalance);
+      setActiveTrade({ tradeId: data.trade.id, period, amount, profitPercent });
+      setCountdownOpen(true);
+    } catch {
       setQuickTradeMessage({ type: 'error', text: 'Network error. Please try again.' });
-    } finally {
-      setQuickTradeLoading(false);
+      setTimeout(() => setQuickTradeMessage(null), 4000);
     }
+  };
+
+  // Handle countdown complete
+  const handleCountdownComplete = (result: { result: 'win' | 'lose'; profitAmount: number; newBalance: number }) => {
+    setWalletBalance(result.newBalance);
+  };
+
+  // Handle countdown close
+  const handleCountdownClose = () => {
+    setCountdownOpen(false);
+    setActiveTrade(null);
+    fetchBalance();
   };
 
   return (
@@ -279,29 +290,6 @@ export default function HomePage() {
                 {quickTradeMessage.text}
               </div>
             )}
-            
-            <div className="flex gap-1 mb-1.5">
-              <button 
-                onClick={() => setQuickTradeType('buy')}
-                className={`flex-1 py-1.5 rounded-lg font-medium text-[10px] min-h-[32px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                  quickTradeType === 'buy' 
-                    ? 'bg-success text-white' 
-                    : 'bg-white/5 hover:bg-white/10'
-                }`}
-              >
-                Buy
-              </button>
-              <button 
-                onClick={() => setQuickTradeType('sell')}
-                className={`flex-1 py-1.5 rounded-lg font-medium text-[10px] min-h-[32px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                  quickTradeType === 'sell' 
-                    ? 'bg-danger text-white' 
-                    : 'bg-white/5 hover:bg-white/10'
-                }`}
-              >
-                Sell
-              </button>
-            </div>
 
             <div className="space-y-1.5">
               <div>
@@ -311,47 +299,36 @@ export default function HomePage() {
                   onChange={(e) => setQuickTradeCoin(e.target.value)}
                   className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px]"
                 >
-                  <option>BTC</option>
-                  <option>ETH</option>
-                  <option>XRP</option>
-                  <option>ADA</option>
+                  <option value="BTC">BTC</option>
+                  <option value="ETH">ETH</option>
+                  <option value="XRP">XRP</option>
+                  <option value="ADA">ADA</option>
+                  <option value="SOL">SOL</option>
+                  <option value="DOT">DOT</option>
                 </select>
               </div>
 
-              <div>
-                <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Amount</label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={quickTradeAmount}
-                  onChange={(e) => setQuickTradeAmount(e.target.value)}
-                  className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px]"
-                />
-              </div>
+              {status === 'authenticated' && (
+                <div className="flex items-center justify-between py-1 border-t border-white/10 text-[10px]">
+                  <p className="text-gray-400">Wallet Balance</p>
+                  <p className="font-bold text-accent">${walletBalance.toLocaleString()} USDT</p>
+                </div>
+              )}
 
-              <div>
-                <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Price (USD)</label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={quickTradePrice}
-                  onChange={(e) => setQuickTradePrice(e.target.value)}
-                  className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 focus:border-accent focus:outline-none text-[10px]"
-                />
+              <div className="flex gap-1.5">
+                <button 
+                  onClick={() => openQuickTrade('buy')}
+                  className="flex-1 py-2 rounded-lg bg-success hover:bg-success/80 text-white font-semibold text-[11px] min-h-[36px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  Buy {quickTradeCoin}
+                </button>
+                <button 
+                  onClick={() => openQuickTrade('sell')}
+                  className="flex-1 py-2 rounded-lg bg-danger hover:bg-danger/80 text-white font-semibold text-[11px] min-h-[36px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  Sell {quickTradeCoin}
+                </button>
               </div>
-
-              <div className="flex items-center justify-between py-1.5 border-t border-white/10 text-[10px]">
-                <p className="text-gray-400">Total</p>
-                <p className="font-bold">${quickTradeAmount && quickTradePrice ? (parseFloat(quickTradeAmount) * parseFloat(quickTradePrice)).toFixed(2) : '0.00'}</p>
-              </div>
-
-              <button 
-                onClick={handleQuickTrade}
-                disabled={quickTradeLoading || !quickTradeAmount || !quickTradePrice}
-                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-accent to-purple-500 hover:from-accent/80 hover:to-purple-500/80 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-[10px] min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                {quickTradeLoading ? 'Processing...' : 'Place Order'}
-              </button>
             </div>
           </div>
 
@@ -389,6 +366,31 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Trade Modal */}
+      <TradeModal
+        isOpen={tradeModalOpen}
+        onClose={() => setTradeModalOpen(false)}
+        tradeType={quickTradeType}
+        cryptoSymbol={quickTradeCoin}
+        walletBalance={walletBalance}
+        onConfirm={handleTradeConfirm}
+      />
+
+      {/* Countdown Popup */}
+      {activeTrade && (
+        <CountdownPopup
+          isOpen={countdownOpen}
+          tradeId={activeTrade.tradeId}
+          period={activeTrade.period}
+          amount={activeTrade.amount}
+          profitPercent={activeTrade.profitPercent}
+          tradeType={quickTradeType}
+          cryptoSymbol={quickTradeCoin}
+          onComplete={handleCountdownComplete}
+          onClose={handleCountdownClose}
+        />
+      )}
     </div>
   );
 }
