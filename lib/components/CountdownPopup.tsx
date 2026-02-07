@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Trophy, XCircle, Loader2, X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
 interface CountdownPopupProps {
   isOpen: boolean;
@@ -186,43 +186,83 @@ export default function CountdownPopup({
             </>
           ) : (
             <>
-              {/* Result */}
-              <div className={`py-6 ${result === 'win' ? 'text-success' : 'text-danger'}`}>
+              {/* Confetti / Particles for win */}
+              {result === 'win' && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  {[...Array(24)].map((_, i) => (
+                    <span
+                      key={i}
+                      className="confetti-particle absolute"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `-5%`,
+                        animationDelay: `${Math.random() * 0.8}s`,
+                        animationDuration: `${1.5 + Math.random() * 1.5}s`,
+                        backgroundColor: ['#22c55e', '#facc15', '#3b82f6', '#a855f7', '#f97316', '#06b6d4'][i % 6],
+                        width: `${4 + Math.random() * 6}px`,
+                        height: `${4 + Math.random() * 6}px`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Result Display */}
+              <div className={`relative py-4 ${result === 'win' ? 'animate-result-win' : 'animate-result-lose'}`}>
+                {/* Icon */}
                 {result === 'win' ? (
-                  <Trophy size={56} className="mx-auto mb-3" />
+                  <div className="mx-auto mb-3 w-16 h-16 rounded-full bg-success/20 flex items-center justify-center animate-bounce-in">
+                    <svg width="36" height="36" viewBox="0 0 36 36" className="text-success">
+                      <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="2" className="animate-circle-draw" />
+                      <path d="M11 18l5 5 9-9" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-check-draw" />
+                    </svg>
+                  </div>
                 ) : (
-                  <XCircle size={56} className="mx-auto mb-3" />
+                  <div className="mx-auto mb-3 w-16 h-16 rounded-full bg-danger/20 flex items-center justify-center animate-shake">
+                    <svg width="36" height="36" viewBox="0 0 36 36" className="text-danger">
+                      <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="2" />
+                      <path d="M13 13l10 10M23 13l-10 10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
                 )}
-                <p className="text-3xl font-black uppercase tracking-wider">
-                  {result === 'win' ? 'WIN' : 'LOSE'}
+
+                {/* Title */}
+                <p className={`text-xl font-black tracking-wide ${result === 'win' ? 'text-success' : 'text-danger'}`}>
+                  {result === 'win' ? 'Profit Secured!' : 'Position Closed'}
                 </p>
               </div>
 
-              {result === 'win' ? (
-                <div className="space-y-1">
-                  <p className="text-success text-lg font-bold">
-                    +{profitAmount.toLocaleString()} USDT
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    New balance: {newBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
-                  </p>
+              {/* Amount */}
+              <div className="space-y-2">
+                <p className={`text-3xl font-black tabular-nums animate-number-pop ${result === 'win' ? 'text-success' : 'text-danger'}`}>
+                  {result === 'win' ? '+' : '-'}${(result === 'win' ? profitAmount : amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                  <span>New balance:</span>
+                  <span className="text-white font-semibold">${newBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT</span>
                 </div>
-              ) : (
-                <div className="space-y-1">
-                  <p className="text-danger text-lg font-bold">
-                    -{amount.toLocaleString()} USDT
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    New balance: {newBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
-                  </p>
-                </div>
+              </div>
+
+              {result === 'win' && (
+                <p className="text-[11px] text-success/70 animate-fade-in-up">
+                  🎉 Great trade! Keep it up.
+                </p>
+              )}
+              {result === 'lose' && (
+                <p className="text-[11px] text-gray-500 animate-fade-in-up">
+                  Markets are unpredictable. Try again!
+                </p>
               )}
 
               <button
                 onClick={onClose}
-                className="w-full py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors"
+                className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  result === 'win'
+                    ? 'bg-success/20 hover:bg-success/30 text-success border border-success/30'
+                    : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
               >
-                Close
+                {result === 'win' ? 'Collect & Close' : 'Close'}
               </button>
             </>
           )}

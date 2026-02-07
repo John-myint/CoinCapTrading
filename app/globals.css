@@ -93,3 +93,159 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* ===== Trade Result Animations ===== */
+
+/* Confetti particle falling */
+.confetti-particle {
+  border-radius: 2px;
+  animation: confetti-fall linear forwards;
+  opacity: 0;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(0);
+    opacity: 1;
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(60px) rotate(120deg) scale(1);
+  }
+  100% {
+    transform: translateY(500px) rotate(720deg) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Win result entrance */
+.animate-result-win {
+  animation: result-win 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes result-win {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Lose result entrance */
+.animate-result-lose {
+  animation: result-lose 0.5s ease-out both;
+}
+
+@keyframes result-lose {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bounce-in for win icon */
+.animate-bounce-in {
+  animation: bounce-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.15s;
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Checkmark draw animation */
+.animate-circle-draw {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: circle-draw 0.6s ease-out forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes circle-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-check-draw {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: check-draw 0.4s ease-out forwards;
+  animation-delay: 0.6s;
+}
+
+@keyframes check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Shake for lose icon */
+.animate-shake {
+  animation: shake 0.6s ease-out both;
+  animation-delay: 0.1s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-8px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+/* Number pop animation */
+.animate-number-pop {
+  animation: number-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.35s;
+}
+
+@keyframes number-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Fade-in-up for subtitle text */
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out both;
+  animation-delay: 0.6s;
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
