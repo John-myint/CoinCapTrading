@@ -30,18 +30,27 @@ const marketStats = [
 ];
 
 const markets = [
-  { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: '43,250.00', change: '+2.5', cap: '$846.2B', volume: '$28.4B', spark: [30, 40, 35, 45, 42, 50], isUp: true, logo: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
-  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', price: '2,280.50', change: '+1.8', cap: '$274.1B', volume: '$12.9B', spark: [20, 25, 23, 28, 30, 29], isUp: true, logo: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
-  { id: 'solana', name: 'Solana', symbol: 'SOL', price: '98.75', change: '-1.2', cap: '$44.9B', volume: '$2.7B', spark: [18, 16, 17, 15, 14, 13], isUp: false, logo: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
-  { id: 'cardano', name: 'Cardano', symbol: 'ADA', price: '0.4567', change: '+3.2', cap: '$16.1B', volume: '$1.1B', spark: [10, 12, 11, 14, 15, 16], isUp: true, logo: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' },
-  { id: 'ripple', name: 'Ripple', symbol: 'XRP', price: '0.5234', change: '-0.9', cap: '$28.7B', volume: '$1.4B', spark: [12, 11, 10, 9, 10, 9], isUp: false, logo: 'https://assets.coingecko.com/coins/images/44/large/xrp.png' },
-  { id: 'polkadot', name: 'Polkadot', symbol: 'DOT', price: '6.89', change: '+0.5', cap: '$9.6B', volume: '$0.6B', spark: [11, 11, 12, 11, 12, 13], isUp: true, logo: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png' },
+  { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: '--', change: '--', cap: '--', volume: '--', spark: [30, 40, 35, 45, 42, 50], isUp: true, logo: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
+  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', price: '--', change: '--', cap: '--', volume: '--', spark: [20, 25, 23, 28, 30, 29], isUp: true, logo: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
+  { id: 'solana', name: 'Solana', symbol: 'SOL', price: '--', change: '--', cap: '--', volume: '--', spark: [18, 16, 17, 15, 14, 13], isUp: true, logo: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
+  { id: 'cardano', name: 'Cardano', symbol: 'ADA', price: '--', change: '--', cap: '--', volume: '--', spark: [10, 12, 11, 14, 15, 16], isUp: true, logo: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' },
+  { id: 'ripple', name: 'Ripple', symbol: 'XRP', price: '--', change: '--', cap: '--', volume: '--', spark: [12, 11, 10, 9, 10, 9], isUp: true, logo: 'https://assets.coingecko.com/coins/images/44/large/xrp.png' },
+  { id: 'polkadot', name: 'Polkadot', symbol: 'DOT', price: '--', change: '--', cap: '--', volume: '--', spark: [11, 11, 12, 11, 12, 13], isUp: true, logo: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png' },
 ];
 
 export default function MarketsPage() {
   const [filter, setFilter] = useState<'all' | 'gainers' | 'losers'>('all');
-  const { prices } = useCoinCapPrices(markets.map((coin) => coin.id));
+  const { prices, isLoading: pricesLoading } = useCoinCapPrices(markets.map((coin) => coin.id));
   
+  const formatVolume = (value: number) => {
+    if (!value) return '--';
+    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
+  };
+
   const liveMarkets = useMemo(() => {
     const withPrices = markets.map((coin) => {
       const live = prices[coin.id];
@@ -52,6 +61,8 @@ export default function MarketsPage() {
         change: formatChange(live.changePercent24Hr),
         isUp: live.changePercent24Hr >= 0,
         changePercent: live.changePercent24Hr,
+        cap: live.marketCap ? formatVolume(live.marketCap) : '--',
+        volume: live.volume24Hr ? formatVolume(live.volume24Hr) : '--',
       };
     });
 

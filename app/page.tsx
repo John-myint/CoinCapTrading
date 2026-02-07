@@ -65,15 +65,15 @@ export default function HomePage() {
   }, [status, fetchBalance]);
   
   const cryptoPrices = [
-    { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: '43,250.00', change: '+2.5', isUp: true, logo: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
-    { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', price: '2,280.50', change: '+1.8', isUp: true, logo: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
-    { id: 'ripple', name: 'Ripple', symbol: 'XRP', price: '0.5234', change: '-0.9', isUp: false, logo: 'https://assets.coingecko.com/coins/images/44/large/xrp.png' },
-    { id: 'cardano', name: 'Cardano', symbol: 'ADA', price: '0.4567', change: '+3.2', isUp: true, logo: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' },
-    { id: 'solana', name: 'Solana', symbol: 'SOL', price: '98.75', change: '-1.2', isUp: false, logo: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
-    { id: 'polkadot', name: 'Polkadot', symbol: 'DOT', price: '6.89', change: '+0.5', isUp: true, logo: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png' },
+    { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: '--', change: '--', isUp: true, logo: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
+    { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', price: '--', change: '--', isUp: true, logo: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
+    { id: 'ripple', name: 'Ripple', symbol: 'XRP', price: '--', change: '--', isUp: true, logo: 'https://assets.coingecko.com/coins/images/44/large/xrp.png' },
+    { id: 'cardano', name: 'Cardano', symbol: 'ADA', price: '--', change: '--', isUp: true, logo: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' },
+    { id: 'solana', name: 'Solana', symbol: 'SOL', price: '--', change: '--', isUp: true, logo: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
+    { id: 'polkadot', name: 'Polkadot', symbol: 'DOT', price: '--', change: '--', isUp: true, logo: 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png' },
   ];
 
-  const { prices } = useCoinCapPrices(cryptoPrices.map((coin) => coin.id));
+  const { prices, isLoading: pricesLoading } = useCoinCapPrices(cryptoPrices.map((coin) => coin.id));
 
   const livePrices = cryptoPrices.map((coin) => {
     const live = prices[coin.id];
@@ -157,7 +157,7 @@ export default function HomePage() {
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] text-gray-400 truncate leading-tight">{crypto.symbol}</p>
-                <p className="text-xs font-semibold truncate leading-tight">${crypto.price}</p>
+                <p className={`text-xs font-semibold truncate leading-tight ${crypto.price === '--' ? 'animate-pulse text-gray-500' : ''}`}>${crypto.price}</p>
               </div>
               <span className={`text-[10px] flex items-center gap-0.5 whitespace-nowrap ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
                 {crypto.isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
@@ -266,10 +266,10 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold">${crypto.price}</p>
-                    <p className={`text-[9px] flex items-center gap-0.5 ${crypto.isUp ? 'text-success' : 'text-danger'}`}>
-                      {crypto.isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
-                      {crypto.change}%
+                    <p className={`text-[10px] font-semibold ${crypto.price === '--' ? 'animate-pulse text-gray-500' : ''}`}>${crypto.price}</p>
+                    <p className={`text-[9px] flex items-center gap-0.5 ${crypto.price === '--' ? 'text-gray-500 animate-pulse' : crypto.isUp ? 'text-success' : 'text-danger'}`}>
+                      {crypto.price !== '--' && (crypto.isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />)}
+                      {crypto.change}{crypto.price !== '--' ? '%' : ''}
                     </p>
                   </div>
                 </div>

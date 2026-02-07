@@ -25,23 +25,46 @@ type PriceMap = Record<
 >;
 
 const STORAGE_KEY = 'coincap_prices';
+const STORAGE_TS_KEY = 'coincap_prices_ts';
+const CACHE_MAX_AGE_MS = 60_000; // Reject localStorage cache older than 60s
 
-export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
-  const [prices, setPrices] = useState<PriceMap>({});
+export function useCoinCapPrices(ids: string[], refreshMs = 5000) {
+  const [prices, setPrices] = useState<PriceMap>(() => {
+    // Initialize from localStorage synchronously (SSR-safe)
+    if (typeof window === 'undefined') return {};
+    try {
+      const cached = localStorage.getItem(STORAGE_KEY);
+      const ts = localStorage.getItem(STORAGE_TS_KEY);
+      if (cached && ts) {
+        const age = Date.now() - Number(ts);
+        if (age < CACHE_MAX_AGE_MS) {
+          return JSON.parse(cached);
+        }
+        // Stale cache — clear it
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_TS_KEY);
+      }
+    } catch {
+      // Ignore corrupted cache
+    }
+    return {};
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Stabilize idsKey based on content, not array reference
+
   const idsKey = useMemo(() => JSON.stringify(ids.slice().sort()), [ids]);
   const idsJoined = useMemo(() => ids.join(','), [ids]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
   const isMountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
+  const retryCountRef = useRef(0);
 
   const fetchPrices = useCallback(async (forceRefresh = false) => {
     try {
       const now = Date.now();
-      if (!forceRefresh && now - lastFetchTimeRef.current < 1000) {
+      // Throttle rapid calls (but not forced refreshes)
+      if (!forceRefresh && now - lastFetchTimeRef.current < 2000) {
         return;
       }
 
@@ -61,13 +84,16 @@ export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
       }
 
       const json = (await response.json()) as { data: CoinCapAsset[] };
-      const nextPrices: PriceMap = {};
 
-      if (json.data && Array.isArray(json.data)) {
+      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+        const nextPrices: PriceMap = {};
         json.data.forEach((asset) => {
+          const priceNum = Number(asset.priceUsd);
+          // Skip assets with zero/NaN price
+          if (!priceNum || isNaN(priceNum)) return;
           nextPrices[asset.id] = {
-            priceUsd: Number(asset.priceUsd),
-            changePercent24Hr: Number(asset.changePercent24Hr),
+            priceUsd: priceNum,
+            changePercent24Hr: Number(asset.changePercent24Hr) || 0,
             high24Hr: asset.high24Hr ? Number(asset.high24Hr) : undefined,
             low24Hr: asset.low24Hr ? Number(asset.low24Hr) : undefined,
             volume24Hr: asset.volume24Hr ? Number(asset.volume24Hr) : undefined,
@@ -75,52 +101,41 @@ export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
           };
         });
 
-        if (isMountedRef.current) {
+        if (Object.keys(nextPrices).length > 0 && isMountedRef.current) {
           setPrices(nextPrices);
           setIsLoading(false);
           lastFetchTimeRef.current = now;
-          
-          if (typeof window !== 'undefined') {
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(nextPrices));
-            } catch (e) {
-              // localStorage full or unavailable
-            }
+          retryCountRef.current = 0;
+
+          // Persist to localStorage with timestamp
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(nextPrices));
+            localStorage.setItem(STORAGE_TS_KEY, String(now));
+          } catch {
+            // localStorage full or unavailable
           }
         }
+      } else {
+        // API returned empty data — bump retry
+        throw new Error('API returned empty price data');
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       if (isMountedRef.current) {
-        console.error('Error fetching prices:', err);
+        console.warn('Price fetch error:', err instanceof Error ? err.message : err);
         setError(err instanceof Error ? err.message : 'Unknown error');
         setIsLoading(false);
+        retryCountRef.current += 1;
       }
     }
   }, [idsJoined]);
 
   useEffect(() => {
     isMountedRef.current = true;
+    retryCountRef.current = 0;
 
-    let shouldFetchFresh = true;
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem(STORAGE_KEY);
-        if (cached) {
-          const cachedPrices = JSON.parse(cached);
-          setPrices(cachedPrices);
-          setIsLoading(false);
-          shouldFetchFresh = false;
-          lastFetchTimeRef.current = Date.now();
-        }
-      } catch (e) {
-        // Ignore corrupted cache
-      }
-    }
-
-    if (shouldFetchFresh) {
-      fetchPrices(true);
-    }
+    // ALWAYS fetch fresh data on mount — cache is only initial state
+    fetchPrices(true);
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -129,29 +144,18 @@ export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
           intervalRef.current = null;
         }
       } else {
-        const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
-        if (timeSinceLastFetch > 5000) {
-          fetchPrices(true);
-        }
-        // Only create new interval if not already existing
+        fetchPrices(true);
         if (!intervalRef.current) {
-          intervalRef.current = setInterval(() => {
-            fetchPrices();
-          }, refreshMs);
+          intervalRef.current = setInterval(() => fetchPrices(), refreshMs);
         }
       }
     };
 
     const handleWindowFocus = () => {
-      const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
-      if (timeSinceLastFetch > 10000) {
-        fetchPrices(true);
-      }
+      fetchPrices(true);
     };
 
-    intervalRef.current = setInterval(() => {
-      fetchPrices();
-    }, refreshMs);
+    intervalRef.current = setInterval(() => fetchPrices(), refreshMs);
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
