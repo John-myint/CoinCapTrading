@@ -7,13 +7,22 @@ import User from './models/User';
 import { checkStrictRateLimit } from './middleware/rateLimit';
 import { consumeBackupCode } from './utils/twoFactor';
 
-export const authConfig = {
-  providers: [
+// Only include Google provider if credentials are configured
+const providers: NextAuthConfig['providers'] = [];
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-    Credentials({
+    })
+  );
+} else {
+  console.warn('[NextAuth] Google OAuth disabled: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set');
+}
+
+providers.push(
+  Credentials({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
@@ -98,7 +107,12 @@ export const authConfig = {
         };
       },
     }),
-  ],
+);
+
+export const authConfig = {
+  providers,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   callbacks: {
     async signIn({ user, account }) {
       // Handle Google OAuth sign in
