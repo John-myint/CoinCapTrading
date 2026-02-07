@@ -256,9 +256,9 @@ export default function ChatWidget() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-0 right-0 md:bottom-6 md:right-6 z-50 w-full md:w-[380px] h-[100dvh] md:h-[520px] md:rounded-xl overflow-hidden flex flex-col bg-[#0d0d1a] border border-white/10 shadow-2xl">
+        <div className="fixed inset-0 md:inset-auto md:bottom-6 md:right-6 z-[70] w-full md:w-[380px] h-[100dvh] md:h-[520px] md:rounded-xl overflow-hidden flex flex-col bg-[#0d0d1a] md:border md:border-white/10 md:shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-accent/20 to-purple-600/20 border-b border-white/10">
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-accent/20 to-purple-600/20 border-b border-white/10" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
                 <MessageCircle size={16} className="text-accent" />
@@ -353,7 +353,7 @@ export default function ChatWidget() {
           {showScrollBtn && (
             <button
               onClick={() => scrollToBottom()}
-              className="absolute bottom-[120px] left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-[10px] text-gray-300 flex items-center gap-1 hover:bg-white/20 transition-colors"
+              className="absolute bottom-24 md:bottom-[120px] left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-[10px] text-gray-300 flex items-center gap-1 hover:bg-white/20 transition-colors z-10"
             >
               <ChevronDown size={12} /> New messages
             </button>
@@ -383,7 +383,7 @@ export default function ChatWidget() {
           )}
 
           {/* Input Area */}
-          <div className="border-t border-white/10 p-3">
+          <div className="border-t border-white/10 p-3" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <div className="flex items-end gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
