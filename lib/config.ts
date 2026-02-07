@@ -10,8 +10,13 @@ if (!process.env.NEXTAUTH_SECRET) {
   throw new Error('CRITICAL: NEXTAUTH_SECRET environment variable is required');
 }
 
-if (!process.env.NEXTAUTH_URL) {
-  throw new Error('CRITICAL: NEXTAUTH_URL environment variable is required');
+// NEXTAUTH_URL is auto-set on Vercel via VERCEL_URL; only required locally
+const resolvedNextAuthUrl =
+  process.env.NEXTAUTH_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+
+if (!resolvedNextAuthUrl && process.env.NODE_ENV === 'production') {
+  console.warn('WARNING: NEXTAUTH_URL is not set. Auth callbacks may not work correctly.');
 }
 
 const config = {
@@ -24,7 +29,7 @@ const config = {
   },
   nextAuth: {
     secret: process.env.NEXTAUTH_SECRET,
-    url: process.env.NEXTAUTH_URL,
+    url: resolvedNextAuthUrl || 'http://localhost:3000',
   },
   email: {
     from: process.env.EMAIL_FROM || 'noreply@coincaptrading.com',

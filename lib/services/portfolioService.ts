@@ -4,6 +4,7 @@ import Trade from '@/lib/models/Trade';
 import config from '@/lib/config';
 import { logger } from '@/lib/utils/logger';
 import Decimal from 'decimal.js';
+import { nanoid } from 'nanoid';
 
 const log = logger.child({ module: 'PortfolioService' });
 
@@ -57,7 +58,7 @@ export class PortfolioService {
         pricePerUnit,
         totalValue,
         status: 'completed',
-        transactionId: `TXN${Date.now()}${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        transactionId: `TXN${nanoid(16)}`,
       });
 
       await trade.save({ session });
@@ -76,13 +77,13 @@ export class PortfolioService {
     }
   }
 
-  private static async executeBuy(
+  private static executeBuy(
     portfolio: any,
     cryptoSymbol: string,
     amount: number,
     pricePerUnit: number,
     totalValue: number
-  ): Promise<void> {
+  ): void {
     const accountBalance = new Decimal(portfolio.accountBalance);
     const totalValueDecimal = new Decimal(totalValue);
 
@@ -115,10 +116,10 @@ export class PortfolioService {
       
       const gainLoss = totalAmount.mul(newPrice.minus(newAverageBuyPrice));
       existingHolding.gainLoss = gainLoss.toNumber();
-      existingHolding.gainLossPercent = gainLoss
-        .div(totalAmount.mul(newAverageBuyPrice))
-        .mul(100)
-        .toNumber();
+      const costBasis = totalAmount.mul(newAverageBuyPrice);
+      existingHolding.gainLossPercent = costBasis.isZero()
+        ? 0
+        : gainLoss.div(costBasis).mul(100).toNumber();
     } else {
       portfolio.holdings.push({
         cryptoSymbol,
@@ -136,13 +137,13 @@ export class PortfolioService {
       .toNumber();
   }
 
-  private static async executeSell(
+  private static executeSell(
     portfolio: any,
     cryptoSymbol: string,
     amount: number,
     pricePerUnit: number,
     totalValue: number
-  ): Promise<void> {
+  ): void {
     const existingHolding = portfolio.holdings?.find(
       (h: any) => h.cryptoSymbol === cryptoSymbol
     );
@@ -180,14 +181,13 @@ export class PortfolioService {
       
       const gainLoss = remainingAmount.mul(newPrice.minus(avgPrice));
       existingHolding.gainLoss = gainLoss.toNumber();
-      existingHolding.gainLossPercent = gainLoss
-        .div(remainingAmount.mul(avgPrice))
-        .mul(100)
-        .toNumber();
+      existingHolding.gainLossPercent = remainingAmount.mul(avgPrice).isZero()
+        ? 0
+        : gainLoss.div(remainingAmount.mul(avgPrice)).mul(100).toNumber();
     }
 
-    const costBasis = new Decimal(existingHolding.averageBuyPrice).mul(amount);
-    const profit = new Decimal(totalValue).minus(costBasis);
+    const sellCostBasisFinal = new Decimal(existingHolding.averageBuyPrice).mul(amount);
+    const profit = new Decimal(totalValue).minus(sellCostBasisFinal);
     
     portfolio.totalReturns = new Decimal(portfolio.totalReturns || 0)
       .plus(profit)
@@ -240,10 +240,10 @@ export class PortfolioService {
           
           const gainLoss = amount.mul(currentPrice.minus(avgPrice));
           holding.gainLoss = gainLoss.toNumber();
-          holding.gainLossPercent = gainLoss
-            .div(amount.mul(avgPrice))
-            .mul(100)
-            .toNumber();
+          const holdingCostBasis = amount.mul(avgPrice);
+          holding.gainLossPercent = holdingCostBasis.isZero()
+            ? 0
+            : gainLoss.div(holdingCostBasis).mul(100).toNumber();
           
           hasChanges = true;
         }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import config from '@/lib/config';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const health = {

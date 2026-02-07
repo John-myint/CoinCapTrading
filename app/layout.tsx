@@ -4,6 +4,8 @@ import { RootLayoutClient } from './RootLayoutClient';
 
 const DEFAULT_LOCALE = 'en';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'CryptoTrade - Crypto Trading Dashboard',
   description: 'Professional crypto trading dashboard with real-time data',

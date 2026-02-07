@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().trim().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   token: z.string().optional(),
 });
 
 export const registerSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
+  fullName: z.string().trim().min(2, 'Name must be at least 2 characters'),
+  email: z.string().trim().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   passwordConfirm: z.string().min(6, 'Password must be at least 6 characters'),
   referralCode: z.string().optional(),
@@ -24,8 +24,8 @@ export const tradeSchema = z.object({
   cryptoSymbol: z.string()
     .min(1, 'Crypto symbol is required')
     .max(10, 'Crypto symbol is too long')
-    .regex(/^[A-Z]+$/, 'Crypto symbol must be uppercase letters only')
-    .transform(val => val.toUpperCase()),
+    .transform(val => val.toUpperCase())
+    .pipe(z.string().regex(/^[A-Z]+$/, 'Crypto symbol must be uppercase letters only')),
   amount: z.coerce.number()
     .positive('Amount must be positive')
     .max(1000000000, 'Amount is too large')
@@ -59,9 +59,9 @@ export const changePasswordSchema = z.object({
 });
 
 export const profileUpdateSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  fullName: z.string().trim().min(2, 'Name must be at least 2 characters').optional(),
   language: z.string().optional(),
-  withdrawalAddress: z.string().optional(),
+  withdrawalAddress: z.string().optional().default(''),
   profilePicture: z.string().nullable().optional(),
 });
 

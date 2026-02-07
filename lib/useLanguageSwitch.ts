@@ -2,7 +2,8 @@
 
 import { useLocale } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState } from 'react';
+
+const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'zh', 'ja'];
 
 export function useLanguageSwitch() {
   const locale = useLocale();
@@ -10,8 +11,9 @@ export function useLanguageSwitch() {
   const pathname = usePathname();
 
   const changeLanguage = (newLocale: string) => {
-    // Remove current locale from pathname
-    const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
+    if (!SUPPORTED_LOCALES.includes(newLocale)) return;
+    // Remove current locale from pathname using precise start-of-path match
+    const pathWithoutLocale = pathname.replace(new RegExp(`^/${locale}`), '') || '/';
     
     // Navigate to new locale
     router.push(`/${newLocale}${pathWithoutLocale}`);

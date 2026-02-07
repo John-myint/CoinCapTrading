@@ -1,12 +1,12 @@
 import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import speakeasy from 'speakeasy';
 import { auth } from '@/lib/nextAuth';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { consumeBackupCode } from '@/lib/utils/twoFactor';
 import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'TwoFADisableRoute' });
 
@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
     let isVerified = false;
 
     if (password && user.password) {
-      // Verify password
-      isVerified = await bcrypt.compare(password, user.password);
+      // Verify password using model method
+      isVerified = await user.matchPassword(password);
       if (!isVerified) {
         return NextResponse.json(
           { error: 'Invalid password' },

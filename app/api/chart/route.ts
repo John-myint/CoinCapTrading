@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
 // Map Binance symbols to CoinGecko IDs
 const coinGeckoIdMap: Record<string, string> = {

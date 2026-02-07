@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 
 type CoinCapAsset = {
   id: string;
@@ -30,22 +30,28 @@ export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
   const [prices, setPrices] = useState<PriceMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const idsKey = useMemo(() => ids.join(','), [ids]);
+  // Stabilize idsKey based on content, not array reference
+  const idsKey = useMemo(() => JSON.stringify(ids.slice().sort()), [ids]);
+  const idsJoined = useMemo(() => ids.join(','), [ids]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
   const isMountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const fetchPrices = async (forceRefresh = false) => {
+  const fetchPrices = useCallback(async (forceRefresh = false) => {
     try {
       const now = Date.now();
-      // Don't fetch more than once per second to avoid rate limiting
       if (!forceRefresh && now - lastFetchTimeRef.current < 1000) {
         return;
       }
 
-      setError(null);
+      // Abort previous inflight request
+      abortRef.current?.abort();
       const controller = new AbortController();
-      const response = await fetch(`/api/prices?ids=${idsKey}`, {
+      abortRef.current = controller;
+
+      setError(null);
+      const response = await fetch(`/api/prices?ids=${idsJoined}`, {
         signal: controller.signal,
         cache: 'no-store',
       });
@@ -74,33 +80,28 @@ export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
           setIsLoading(false);
           lastFetchTimeRef.current = now;
           
-          // Persist to localStorage for seamless tab switching
           if (typeof window !== 'undefined') {
             try {
               localStorage.setItem(STORAGE_KEY, JSON.stringify(nextPrices));
             } catch (e) {
-              console.warn('Failed to save prices to localStorage:', e);
+              // localStorage full or unavailable
             }
-          }
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log('✓ Prices updated at', new Date(now).toLocaleTimeString());
           }
         }
       }
     } catch (err) {
-      if (isMountedRef.current && !(err instanceof Error && err.message === 'The user aborted a request')) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      if (isMountedRef.current) {
         console.error('Error fetching prices:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
         setIsLoading(false);
       }
     }
-  };
+  }, [idsJoined]);
 
   useEffect(() => {
     isMountedRef.current = true;
 
-    // Load cached prices from localStorage first (avoid placeholder flicker)
     let shouldFetchFresh = true;
     if (typeof window !== 'undefined') {
       try {
@@ -109,77 +110,62 @@ export function useCoinCapPrices(ids: string[], refreshMs = 8000) {
           const cachedPrices = JSON.parse(cached);
           setPrices(cachedPrices);
           setIsLoading(false);
-          if (process.env.NODE_ENV === 'development') {
-            console.log('✓ Loaded cached prices from localStorage');
-          }
-          // If cache was just loaded, don't force fresh fetch unless it's stale (>10s)
           shouldFetchFresh = false;
           lastFetchTimeRef.current = Date.now();
         }
       } catch (e) {
-        console.warn('Failed to load cached prices:', e);
+        // Ignore corrupted cache
       }
     }
 
-    // Only fetch fresh prices if we didn't load cached data or it's stale
     if (shouldFetchFresh) {
       fetchPrices(true);
     }
 
-    // Handle tab visibility - pause/resume fetching
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Tab hidden - pausing price updates');
-        }
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
       } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Tab visible - resuming price updates');
-        }
-        // Force refresh when tab becomes visible (only if more than 5 seconds have passed)
         const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
         if (timeSinceLastFetch > 5000) {
           fetchPrices(true);
         }
-        // Resume polling
-        intervalRef.current = setInterval(() => {
-          fetchPrices();
-        }, refreshMs);
+        // Only create new interval if not already existing
+        if (!intervalRef.current) {
+          intervalRef.current = setInterval(() => {
+            fetchPrices();
+          }, refreshMs);
+        }
       }
     };
 
-    // Handle window focus - only refresh if prices are stale (>10 seconds old)
     const handleWindowFocus = () => {
       const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
       if (timeSinceLastFetch > 10000) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Window focused - prices stale, refreshing');
-        }
         fetchPrices(true);
       }
     };
 
-    // Set up polling interval
     intervalRef.current = setInterval(() => {
       fetchPrices();
     }, refreshMs);
 
-    // Add event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       isMountedRef.current = false;
+      abortRef.current?.abort();
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [idsKey, refreshMs]);
+  }, [idsKey, refreshMs, fetchPrices]);
 
   return { prices, isLoading, error };
 }

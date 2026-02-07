@@ -171,11 +171,11 @@ export default function RegisterPage() {
               />
               <span className="text-sm text-gray-400">
                 I agree to the{' '}
-                <Link href="/terms" className="text-accent hover:text-accent/80">
+                <Link href="#" className="text-accent hover:text-accent/80">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy" className="text-accent hover:text-accent/80">
+                <Link href="#" className="text-accent hover:text-accent/80">
                   Privacy Policy
                 </Link>
               </span>

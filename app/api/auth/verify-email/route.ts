@@ -2,8 +2,16 @@ import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { hashToken } from '@/lib/auth';
+import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
+import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
+
+const log = logger.child({ module: 'VerifyEmailRoute' });
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await withStrictRateLimit(request, undefined, 10, '1 h');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
@@ -43,7 +51,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Email verification error:', error);
+    log.error({ error }, 'Email verification error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

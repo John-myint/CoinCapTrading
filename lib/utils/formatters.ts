@@ -37,7 +37,8 @@ export const formatPercentage = (value: number): string => {
   return `${value.toFixed(2)}%`;
 };
 
-export const truncateAddress = (address: string, startChars: number = 6, endChars: number = 4): string => {
+export const truncateAddress = (address: string | null | undefined, startChars: number = 6, endChars: number = 4): string => {
+  if (!address) return '';
   if (address.length <= startChars + endChars) return address;
   return `${address.slice(0, startChars)}...${address.slice(-endChars)}`;
 };

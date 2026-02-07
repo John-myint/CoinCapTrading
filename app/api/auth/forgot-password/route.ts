@@ -6,6 +6,7 @@ import { generateSecureToken, hashToken } from '@/lib/auth';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { logger } from '@/lib/utils/logger';
 import { forgotPasswordSchema } from '@/lib/validation/schemas';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'ForgotPasswordRoute' });
 

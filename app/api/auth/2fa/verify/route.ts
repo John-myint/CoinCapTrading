@@ -6,6 +6,7 @@ import { auth } from '@/lib/nextAuth';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { generateBackupCodes, hashBackupCodes } from '@/lib/utils/twoFactor';
 import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'TwoFAVerifyRoute' });
 

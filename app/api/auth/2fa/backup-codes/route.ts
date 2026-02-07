@@ -3,6 +3,8 @@ import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/nextAuth';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
+import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const rateLimitResponse = await withStrictRateLimit(request, undefined, 10, '1 h');
@@ -20,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user from database
-    const user = await User.findById(session.user.id).select('isTwoFactorEnabled twoFactorBackupCodes');
+    const user = await User.findById(session.user.id).select('isTwoFactorEnabled +twoFactorBackupCodes');
 
     if (!user) {
       return NextResponse.json(
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('Get backup codes error:', error);
+    logger.error({ error }, 'Get backup codes error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

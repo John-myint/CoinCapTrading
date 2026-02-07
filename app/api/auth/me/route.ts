@@ -2,8 +2,16 @@ import { connectDB } from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/nextAuth';
+import { withRateLimit } from '@/lib/middleware/rateLimit';
+import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
+
+const log = logger.child({ module: 'MeRoute' });
 
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = await withRateLimit(request);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
@@ -16,9 +24,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch user from database using userId from token
+    // Fetch user from database - select password existence without loading hash
     const user = await User.findById(session.user.id).select(
-      '+password fullName email uid referralCode isVerified isTwoFactorEnabled accountStatus language withdrawalAddress profilePicture createdAt'
+      'fullName email uid referralCode isVerified isTwoFactorEnabled accountStatus language withdrawalAddress profilePicture createdAt'
     );
 
     if (!user) {
@@ -27,6 +35,9 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Check if user has password set separately with a lean count query
+    const hasPassword = await User.countDocuments({ _id: session.user.id, password: { $ne: null } }) > 0;
 
     return NextResponse.json(
       {
@@ -38,7 +49,7 @@ export async function GET(request: NextRequest) {
           referralCode: user.referralCode,
           isVerified: user.isVerified,
           isTwoFactorEnabled: user.isTwoFactorEnabled,
-          hasPassword: !!user.password, // Whether user has password set (OAuth vs email/password)
+          hasPassword,
           accountStatus: user.accountStatus,
           language: user.language,
           withdrawalAddress: user.withdrawalAddress,
@@ -49,7 +60,7 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('Get user error:', error);
+    log.error({ error }, 'Get user error');
 
     return NextResponse.json(
       { error: 'Internal server error' },

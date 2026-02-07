@@ -5,6 +5,7 @@ import { withRateLimit } from '@/lib/middleware/rateLimit';
 import { tradeSchema } from '@/lib/validation/schemas';
 import { PortfolioService } from '@/lib/services/portfolioService';
 import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'TradeRoute' });
 

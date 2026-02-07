@@ -20,14 +20,17 @@ const tradeSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: true,
+      min: [0, 'Amount must be positive'],
     },
     pricePerUnit: {
       type: Number,
       required: true,
+      min: [0, 'Price must be positive'],
     },
     totalValue: {
       type: Number,
       required: true,
+      min: [0, 'Total value must be positive'],
     },
     status: {
       type: String,
@@ -45,7 +48,7 @@ const tradeSchema = new mongoose.Schema(
 );
 
 tradeSchema.index({ userId: 1, createdAt: -1 });
-tradeSchema.index({ transactionId: 1 });
+// transactionId already has unique index from schema definition
 tradeSchema.index({ cryptoSymbol: 1 });
 tradeSchema.index({ status: 1 });
 

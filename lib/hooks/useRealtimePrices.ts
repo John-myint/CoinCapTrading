@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { CoinCapAsset } from '@/lib/types';
 
 type PriceData = {
@@ -10,18 +10,25 @@ type PriceData = {
 
 type PriceMap = Record<string, PriceData>;
 
-const isBrowser = typeof window !== 'undefined';
-
 export function useRealtimePrices(ids: string[]) {
   const [prices, setPrices] = useState<PriceMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const idsRef = useRef(ids.join(','));
+  const abortRef = useRef<AbortController | null>(null);
+  // Stabilize ids to avoid re-renders when array ref changes but content is same
+  const idsKey = useMemo(() => ids.join(','), [ids]);
 
   const fetchPrices = useCallback(async () => {
+    // Cancel previous inflight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      const response = await fetch(`/api/prices?ids=${ids.join(',')}`);
+      const response = await fetch(`/api/prices?ids=${idsKey}`, {
+        signal: controller.signal,
+      });
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
@@ -40,14 +47,13 @@ export function useRealtimePrices(ids: string[]) {
       }
       setIsLoading(false);
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Unknown error');
       setIsLoading(false);
     }
-  }, [ids]);
+  }, [idsKey]);
 
   useEffect(() => {
-    idsRef.current = ids.join(',');
-    
     fetchPrices();
 
     pollIntervalRef.current = setInterval(() => {
@@ -55,11 +61,12 @@ export function useRealtimePrices(ids: string[]) {
     }, 5000);
 
     return () => {
+      abortRef.current?.abort();
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [ids, fetchPrices]);
+  }, [fetchPrices]);
 
   return { prices, isLoading, error };
 }

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/nextAuth';
 import { changePasswordSchema } from '@/lib/validation/schemas';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   const rateLimitResponse = await withStrictRateLimit(request, undefined, 5, '1 h');

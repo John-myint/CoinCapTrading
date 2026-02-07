@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { generateSecureToken, hashToken } from '@/lib/auth';
 import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'ResendVerificationRoute' });
 

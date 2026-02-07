@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, memo, useMemo } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface TradingViewChartProps {
@@ -57,7 +57,7 @@ const SimpleChart = memo(function SimpleChart({ data, height, coinName, showPric
           <div className="text-right">
             <p className={`text-sm font-semibold ${isUp ? 'text-success' : 'text-danger'} flex items-center gap-1 justify-end`}>
               {isUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-              {((priceChange / previousPrice) * 100).toFixed(2)}%
+              {previousPrice !== 0 ? ((priceChange / previousPrice) * 100).toFixed(2) : '0.00'}%
             </p>
           </div>
         </div>

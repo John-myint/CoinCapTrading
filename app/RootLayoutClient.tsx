@@ -3,9 +3,9 @@
 import { Home, TrendingUp, ArrowLeftRight, Wallet, Menu, X, User, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 
 interface RootLayoutClientProps {
   children: React.ReactNode;
@@ -20,7 +20,23 @@ function RootLayoutContent({
 }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { status } = useSession();
+  const [portfolioValue, setPortfolioValue] = useState<string | null>(null);
   
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetch('/api/dashboard')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.portfolio?.accountBalance != null) {
+            const total = (data.portfolio.accountBalance ?? 0) +
+              (data.portfolio.holdings ?? []).reduce((sum: number, h: any) => sum + (h.totalValue ?? 0), 0);
+            setPortfolioValue(total.toLocaleString('en-US', { style: 'currency', currency: 'USD' }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [status]);
   // Check if current page is auth page
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password' || pathname === '/verify-email';
 
@@ -79,8 +95,7 @@ function RootLayoutContent({
           
           <div className="glass-card p-2">
             <p className="text-[10px] text-gray-400 mb-0.5">Portfolio Value</p>
-            <p className="text-base font-bold">$24,567.89</p>
-            <p className="text-[10px] text-success">+12.5% Today</p>
+            <p className="text-base font-bold">{portfolioValue ?? '—'}</p>
           </div>
         </div>
       </aside>

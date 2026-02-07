@@ -1,4 +1,4 @@
-interface CryptoData {
+export interface CryptoData {
   symbol: string;
   name: string;
   currentPrice: number;
@@ -31,8 +31,19 @@ export const formatLargeNumber = (value: number): string => {
 };
 
 export const fetchRealCryptoData = async (): Promise<CryptoData[]> => {
+  // Map CoinGecko IDs to correct ticker symbols
+  const symbolMap: Record<string, string> = {
+    bitcoin: 'BTC',
+    ethereum: 'ETH',
+    cardano: 'ADA',
+    solana: 'SOL',
+    ripple: 'XRP',
+    polkadot: 'DOT',
+    dogecoin: 'DOGE',
+  };
+
   try {
-    const ids = ['bitcoin', 'ethereum', 'cardano', 'solana', 'ripple', 'polkadot', 'dogecoin'];
+    const ids = Object.keys(symbolMap);
     const response = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_market_cap=true&include_24hr_change=true`
     );
@@ -44,7 +55,7 @@ export const fetchRealCryptoData = async (): Promise<CryptoData[]> => {
     const data = await response.json();
 
     return ids.map(id => ({
-      symbol: id.toUpperCase().substring(0, 3),
+      symbol: symbolMap[id],
       name: id.charAt(0).toUpperCase() + id.slice(1),
       currentPrice: data[id]?.usd || 0,
       changePercent24Hr: data[id]?.['usd_24h_change'] || 0,

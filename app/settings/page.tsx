@@ -1,13 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, Lock, Globe, Home, HelpCircle, Bell, Info, Shield, Headphones } from 'lucide-react';
-import Image from 'next/image';
+import { ArrowLeft, Copy, Lock, Globe, Home, HelpCircle, Bell, Info, Shield, Headphones, Loader2 } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+
+interface UserData {
+  fullName: string;
+  uid: string;
+  referralCode: string;
+  isTwoFactorEnabled: boolean;
+  language: string;
+}
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [copied, setCopied] = useState<string | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+    if (status === 'authenticated') {
+      fetchUser();
+    }
+  }, [status]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.status === 401) {
+        signOut({ redirect: false });
+        router.push('/login');
+        return;
+      }
+      if (!res.ok) throw new Error('Failed to fetch user');
+      const data = await res.json();
+      setUser(data.user);
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -18,6 +57,18 @@ export default function SettingsPage() {
   const handleBack = () => {
     router.push('/');
   };
+
+  const initials = user?.fullName
+    ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : '??';
+
+  if (isLoading || status === 'loading') {
+    return (
+      <div className="h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="animate-spin text-accent" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-[#0a0a0a] flex flex-col">
@@ -40,11 +91,11 @@ export default function SettingsPage() {
           <div className="glass-card">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-2 border-accent">
-                KG
+                {initials}
               </div>
               <div className="flex-1">
-                <p className="text-white text-lg font-semibold">KG</p>
-                <p className="text-xs text-gray-400">Premium Member</p>
+                <p className="text-white text-lg font-semibold">{user?.fullName || 'User'}</p>
+                <p className="text-xs text-gray-400">Member</p>
               </div>
             </div>
           </div>
@@ -55,14 +106,16 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-400">UID</p>
-                  <p className="text-white font-semibold">1106103</p>
+                  <p className="text-white font-semibold">{user?.uid || '—'}</p>
                 </div>
-                <button
-                  onClick={() => handleCopy('1106103', 'uid')}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                >
-                  <Copy size={18} className={copied === 'uid' ? 'text-success' : 'text-gray-400'} />
-                </button>
+                {user?.uid && (
+                  <button
+                    onClick={() => handleCopy(user.uid, 'uid')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  >
+                    <Copy size={18} className={copied === 'uid' ? 'text-success' : 'text-gray-400'} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -70,14 +123,16 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-400">Referral Code</p>
-                  <p className="text-white font-semibold">REF1234567</p>
+                  <p className="text-white font-semibold">{user?.referralCode || '—'}</p>
                 </div>
-                <button
-                  onClick={() => handleCopy('REF1234567', 'referral')}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                >
-                  <Copy size={18} className={copied === 'referral' ? 'text-success' : 'text-gray-400'} />
-                </button>
+                {user?.referralCode && (
+                  <button
+                    onClick={() => handleCopy(user.referralCode, 'referral')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  >
+                    <Copy size={18} className={copied === 'referral' ? 'text-success' : 'text-gray-400'} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -89,30 +144,32 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <p className="text-xs text-gray-400 font-semibold px-2">ACCOUNT</p>
             <div className="space-y-2">
-              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+              <button onClick={() => router.push('/2fa/manage')} className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
                 <div className="flex items-center gap-3">
                   <Shield size={18} className="text-accent" />
-                  <p className="text-white font-medium text-sm">Authentication</p>
+                  <p className="text-white font-medium text-sm">Two-Factor Auth</p>
                 </div>
-                <span className="text-xs bg-success/20 text-success px-3 py-1 rounded-full font-semibold">Certified</span>
+                <span className={`text-xs px-3 py-1 rounded-full font-semibold ${user?.isTwoFactorEnabled ? 'bg-success/20 text-success' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                  {user?.isTwoFactorEnabled ? 'Enabled' : 'Disabled'}
+                </span>
               </button>
 
-              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+              <button onClick={() => router.push('/account')} className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
                 <div className="flex items-center gap-3">
                   <Globe size={18} className="text-purple-400" />
                   <p className="text-white font-medium text-sm">Language</p>
                 </div>
-                <span className="text-xs text-gray-400">English</span>
+                <span className="text-xs text-gray-400">{user?.language || 'English'}</span>
               </button>
 
-              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+              <button onClick={() => router.push('/account')} className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
                 <div className="flex items-center gap-3">
                   <Home size={18} className="text-cyan-400" />
                   <p className="text-white font-medium text-sm">Withdrawal Address</p>
                 </div>
               </button>
 
-              <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
+              <button onClick={() => router.push('/change-password')} className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">
                 <div className="flex items-center gap-3">
                   <Lock size={18} className="text-orange-400" />
                   <p className="text-white font-medium text-sm">Password Setting</p>
@@ -137,7 +194,6 @@ export default function SettingsPage() {
                   <Bell size={18} className="text-yellow-400" />
                   <p className="text-white font-medium text-sm">Notification</p>
                 </div>
-                <span className="text-xs bg-accent/20 text-accent px-3 py-1 rounded-full font-semibold">New</span>
               </button>
 
               <button className="w-full glass-card flex items-center justify-between hover:bg-white/10 transition-colors">

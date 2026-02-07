@@ -5,6 +5,7 @@ import { auth } from '@/lib/nextAuth';
 import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { generateBackupCodes, hashBackupCodes } from '@/lib/utils/twoFactor';
 import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'TwoFARegenerateBackupCodesRoute' });
 
@@ -23,20 +24,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch user from database
-    const user = await User.findById(session.user.id);
+    // Require re-authentication: password or 2FA code
+    const body = await request.json().catch(() => ({}));
+    const { password, code } = body as { password?: string; code?: string };
 
-    if (!user) {
+    if (!password && !code) {
+      return NextResponse.json(
+        { error: 'Password or 2FA code required to regenerate backup codes' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch user from database
+    const userForAuth = await User.findById(session.user.id).select(
+      '+password +twoFactorSecret'
+    );
+
+    if (!userForAuth) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    if (!user.isTwoFactorEnabled) {
+    if (!userForAuth.isTwoFactorEnabled) {
       return NextResponse.json(
         { error: '2FA is not enabled' },
         { status: 400 }
+      );
+    }
+
+    // Verify identity
+    let isVerified = false;
+    if (password && userForAuth.password) {
+      isVerified = await userForAuth.matchPassword(password);
+    } else if (code && userForAuth.twoFactorSecret) {
+      const speakeasy = (await import('speakeasy')).default;
+      isVerified = speakeasy.totp.verify({
+        secret: userForAuth.twoFactorSecret,
+        encoding: 'base32',
+        token: code,
+        window: 2,
+      });
+    }
+
+    if (!isVerified) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
       );
     }
 
@@ -45,10 +80,10 @@ export async function POST(request: NextRequest) {
     const hashedBackupCodes = hashBackupCodes(newBackupCodes);
     
     // Update user with new backup codes
-    user.twoFactorBackupCodes = hashedBackupCodes;
-    await user.save();
+    userForAuth.twoFactorBackupCodes = hashedBackupCodes;
+    await userForAuth.save();
 
-    log.info({ userId: user._id }, 'Backup codes regenerated successfully');
+    log.info({ userId: userForAuth._id }, 'Backup codes regenerated successfully');
 
     return NextResponse.json(
       {

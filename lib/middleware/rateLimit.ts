@@ -4,57 +4,99 @@ import { NextRequest, NextResponse } from 'next/server';
 import config from '@/lib/config';
 import { logger } from '@/lib/utils/logger';
 
-let ratelimit: Ratelimit | null = null;
+// Singleton Redis instance - reused across all rate limit calls
+let sharedRedis: Redis | null = null;
 
-if (config.rateLimit.enabled && config.rateLimit.redis.url && config.rateLimit.redis.token) {
+function getRedis(): Redis | null {
+  if (sharedRedis) return sharedRedis;
+  if (!config.rateLimit.enabled || !config.rateLimit.redis.url || !config.rateLimit.redis.token) {
+    return null;
+  }
   try {
-    const redis = new Redis({
+    sharedRedis = new Redis({
       url: config.rateLimit.redis.url,
       token: config.rateLimit.redis.token,
     });
-
-    ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(10, '1 m'),
-      analytics: true,
-      prefix: '@upstash/ratelimit',
-    });
+    return sharedRedis;
   } catch (error) {
     logger.warn('Rate limiting not configured, skipping rate limit checks');
+    return null;
   }
+}
+
+// Singleton default rate limiter
+let ratelimit: Ratelimit | null = null;
+
+function getDefaultRatelimit(): Ratelimit | null {
+  if (ratelimit) return ratelimit;
+  const redis = getRedis();
+  if (!redis) return null;
+  ratelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(10, '1 m'),
+    analytics: true,
+    prefix: '@upstash/ratelimit',
+  });
+  return ratelimit;
+}
+
+// Cache for strict rate limiters keyed by maxRequests-window
+const strictRatelimitCache = new Map<string, Ratelimit>();
+
+function getStrictRatelimit(maxRequests: number, window: string): Ratelimit | null {
+  const redis = getRedis();
+  if (!redis) return null;
+  const cacheKey = `${maxRequests}-${window}`;
+  let cached = strictRatelimitCache.get(cacheKey);
+  if (cached) return cached;
+  cached = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(maxRequests, window as any),
+    analytics: true,
+    prefix: '@upstash/ratelimit-strict',
+  });
+  strictRatelimitCache.set(cacheKey, cached);
+  return cached;
+}
+
+function buildRateLimitResponse(
+  status: number,
+  message: string,
+  limit: number,
+  remaining: number,
+  reset: number
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: 'Too many requests',
+      message,
+      retryAfter: Math.ceil((reset - Date.now()) / 1000),
+    },
+    {
+      status,
+      headers: {
+        'X-RateLimit-Limit': limit.toString(),
+        'X-RateLimit-Remaining': remaining.toString(),
+        'X-RateLimit-Reset': new Date(reset).toISOString(),
+      },
+    }
+  );
 }
 
 export async function withRateLimit(
   request: NextRequest,
   identifier?: string
 ): Promise<NextResponse | null> {
-  if (!ratelimit) {
-    return null;
-  }
+  const rl = getDefaultRatelimit();
+  if (!rl) return null;
 
   const id = identifier || request.ip || request.headers.get('x-forwarded-for') || 'anonymous';
 
   try {
-    const { success, limit, reset, remaining } = await ratelimit.limit(id);
-
+    const { success, limit, reset, remaining } = await rl.limit(id);
     if (!success) {
-      return NextResponse.json(
-        { 
-          error: 'Too many requests', 
-          message: 'Please try again later',
-          retryAfter: Math.ceil((reset - Date.now()) / 1000),
-        },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': new Date(reset).toISOString(),
-          },
-        }
-      );
+      return buildRateLimitResponse(429, 'Please try again later', limit, remaining, reset);
     }
-
     return null;
   } catch (error) {
     logger.error({ error }, 'Rate limit check failed');
@@ -68,45 +110,16 @@ export async function withStrictRateLimit(
   maxRequests: number = 5,
   window: string = '1 m'
 ): Promise<NextResponse | null> {
-  if (!config.rateLimit.enabled || !config.rateLimit.redis.url || !config.rateLimit.redis.token) {
-    return null;
-  }
-
-  const redis = new Redis({
-    url: config.rateLimit.redis.url,
-    token: config.rateLimit.redis.token,
-  });
-
-  const strictRatelimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(maxRequests, window as any),
-    analytics: true,
-    prefix: '@upstash/ratelimit-strict',
-  });
+  const rl = getStrictRatelimit(maxRequests, window);
+  if (!rl) return null;
 
   const id = identifier || request.ip || request.headers.get('x-forwarded-for') || 'anonymous';
 
   try {
-    const { success, limit, reset, remaining } = await strictRatelimit.limit(id);
-
+    const { success, limit, reset, remaining } = await rl.limit(id);
     if (!success) {
-      return NextResponse.json(
-        { 
-          error: 'Too many requests', 
-          message: 'Rate limit exceeded. Please try again later.',
-          retryAfter: Math.ceil((reset - Date.now()) / 1000),
-        },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': new Date(reset).toISOString(),
-          },
-        }
-      );
+      return buildRateLimitResponse(429, 'Rate limit exceeded. Please try again later.', limit, remaining, reset);
     }
-
     return null;
   } catch (error) {
     logger.error({ error }, 'Strict rate limit check failed');
@@ -119,24 +132,11 @@ export async function checkStrictRateLimit(
   maxRequests: number = 5,
   window: string = '1 m'
 ): Promise<{ success: boolean; retryAfter?: number }> {
-  if (!config.rateLimit.enabled || !config.rateLimit.redis.url || !config.rateLimit.redis.token) {
-    return { success: true };
-  }
-
-  const redis = new Redis({
-    url: config.rateLimit.redis.url,
-    token: config.rateLimit.redis.token,
-  });
-
-  const strictRatelimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(maxRequests, window as any),
-    analytics: true,
-    prefix: '@upstash/ratelimit-strict',
-  });
+  const rl = getStrictRatelimit(maxRequests, window);
+  if (!rl) return { success: true };
 
   try {
-    const { success, reset } = await strictRatelimit.limit(identifier);
+    const { success, reset } = await rl.limit(identifier);
     if (success) {
       return { success: true };
     }

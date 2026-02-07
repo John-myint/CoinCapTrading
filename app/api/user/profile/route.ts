@@ -3,8 +3,16 @@ import User from '@/lib/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/nextAuth';
 import { profileUpdateSchema } from '@/lib/validation/schemas';
+import { withRateLimit } from '@/lib/middleware/rateLimit';
+import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
+
+const log = logger.child({ module: 'ProfileRoute' });
 
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = await withRateLimit(request);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
@@ -45,7 +53,7 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Get profile error:', error);
+    log.error({ error }, 'Get profile error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -54,6 +62,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const rateLimitResponse = await withRateLimit(request);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await connectDB();
 
@@ -77,15 +88,16 @@ export async function PUT(request: NextRequest) {
 
     const { fullName, language, withdrawalAddress, profilePicture } = validationResult.data;
 
+    const updateData: Record<string, any> = {};
+    if (fullName !== undefined && fullName) updateData.fullName = fullName;
+    if (language !== undefined && language) updateData.language = language;
+    if (withdrawalAddress !== undefined) updateData.withdrawalAddress = withdrawalAddress;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+
     // Update user
     const user = await User.findByIdAndUpdate(
       session.user.id,
-      {
-        ...(fullName && { fullName }),
-        ...(language && { language }),
-        ...(withdrawalAddress && { withdrawalAddress }),
-        ...(profilePicture !== undefined && { profilePicture }),
-      },
+      updateData,
       { new: true }
     );
 
@@ -113,7 +125,7 @@ export async function PUT(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Update profile error:', error);
+    log.error({ error }, 'Update profile error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

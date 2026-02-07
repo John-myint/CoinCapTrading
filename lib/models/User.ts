@@ -7,23 +7,25 @@ const generateReferral = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 
 
 const userSchema = new mongoose.Schema(
   {
-    fullName: {
-      type: String,
-      required: [true, 'Please provide a name'],
-    },
     email: {
       type: String,
       required: [true, 'Please provide an email'],
       unique: true,
       lowercase: true,
+      trim: true,
       match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/,
         'Please provide a valid email',
       ],
     },
+    fullName: {
+      type: String,
+      required: [true, 'Please provide a name'],
+      trim: true,
+    },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
+      required: false,
       minlength: 6,
       select: false,
     },
@@ -59,6 +61,7 @@ const userSchema = new mongoose.Schema(
     googleId: {
       type: String,
       default: null,
+      index: { sparse: true },
     },
     resetToken: {
       type: String,
@@ -119,7 +122,7 @@ userSchema.index({ verificationToken: 1 }, { sparse: true });
 
 // Hash password before saving
 userSchema.pre('save', async function () {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return;
   }
 

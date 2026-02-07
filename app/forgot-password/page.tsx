@@ -8,6 +8,7 @@ import Link from 'next/link';
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -34,6 +35,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
+      setSubmittedEmail(email);
       setSubmitted(true);
       setEmail('');
     } catch (error) {
@@ -108,7 +110,7 @@ export default function ForgotPasswordPage() {
                 </div>
                 <h2 className="text-2xl font-bold">Check Your Email</h2>
                 <p className="text-gray-400">
-                  We've sent a password reset link to <span className="font-semibold text-white">{email}</span>
+                  We've sent a password reset link to <span className="font-semibold text-white">{submittedEmail}</span>
                 </p>
                 <p className="text-gray-500 text-sm">
                   The link will expire in 1 hour. If you don't see the email, check your spam folder.
@@ -128,7 +130,7 @@ export default function ForgotPasswordPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-500 mt-8">
-          © 2024 CryptoTrade. All rights reserved.
+          © {new Date().getFullYear()} CryptoTrade. All rights reserved.
         </p>
       </div>
     </div>

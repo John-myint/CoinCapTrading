@@ -6,6 +6,7 @@ import { withStrictRateLimit } from '@/lib/middleware/rateLimit';
 import { registerSchema } from '@/lib/validation/schemas';
 import { generateSecureToken, hashToken } from '@/lib/auth';
 import { logger } from '@/lib/utils/logger';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'RegisterRoute' });
 
@@ -39,19 +40,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await User.create({
-      fullName,
-      email,
-      password,
-    });
-
     const verificationToken = generateSecureToken();
     const hashedToken = hashToken(verificationToken);
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    user.verificationToken = hashedToken;
-    user.verificationTokenExpires = verificationTokenExpires;
-    await user.save();
+    const user = await User.create({
+      fullName,
+      email,
+      password,
+      verificationToken: hashedToken,
+      verificationTokenExpires,
+    });
 
     const emailResult = await sendVerificationEmail(email, verificationToken);
     

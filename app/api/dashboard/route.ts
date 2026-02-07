@@ -6,6 +6,7 @@ import { PortfolioService } from '@/lib/services/portfolioService';
 import { logger } from '@/lib/utils/logger';
 import { withRateLimit } from '@/lib/middleware/rateLimit';
 import { Holding } from '@/lib/types';
+export const dynamic = 'force-dynamic';
 
 const log = logger.child({ module: 'DashboardRoute' });
 
