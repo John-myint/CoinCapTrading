@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, TrendingUp, ArrowLeftRight, Wallet, Menu, X, User, BarChart3 } from 'lucide-react';
+import { Home, TrendingUp, ArrowLeftRight, Wallet, Menu, X, User, BarChart3, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -46,6 +46,7 @@ function RootLayoutContent({
     { name: 'Home', icon: Home, href: '/' },
     { name: 'Markets', icon: BarChart3, href: '/markets' },
     { name: 'Trade', icon: ArrowLeftRight, href: '/trade' },
+    { name: 'History', icon: Clock, href: '/trade-history' },
     { name: 'Wallet', icon: Wallet, href: '/wallet' },
   ];
 

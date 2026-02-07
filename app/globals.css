@@ -3,7 +3,13 @@
 @tailwind utilities;
 
 html {
-  font-size: clamp(14px, 2.5vw, 16px);
+  font-size: clamp(15px, 2.5vw, 16px);
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
 }
 
 @layer base {

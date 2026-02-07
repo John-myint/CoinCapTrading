@@ -47,7 +47,7 @@ const SimpleChart = memo(function SimpleChart({ data, height, coinName, showPric
   const color = isUp ? '#10b981' : '#ef4444';
 
   return (
-    <div className={`${height} bg-gradient-to-br from-black/20 to-black/10 rounded-lg border border-white/5 p-4 flex flex-col justify-between`}>
+    <div className={`${height} bg-gradient-to-br from-black/20 to-black/10 rounded-lg border border-white/5 p-4 flex flex-col justify-between overflow-hidden max-w-full`}>
       {showPrice && (
         <div className="flex items-center justify-between mb-2">
           <div>

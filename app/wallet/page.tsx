@@ -13,6 +13,10 @@ import {
   Loader,
   AlertCircle,
   ArrowLeft,
+  ArrowLeftRight,
+  RefreshCw,
+  Loader2,
+  ChevronDown,
 } from 'lucide-react';
 import { fetchRealCryptoData, formatPrice, formatLargeNumber } from '@/lib/mockCryptoData';
 import { useSession, signOut } from 'next-auth/react';
@@ -53,7 +57,17 @@ interface WalletData {
   };
 }
 
-type TabType = 'overview' | 'assets' | 'transactions';
+type TabType = 'overview' | 'assets' | 'transactions' | 'swap';
+
+const SWAP_COINS = [
+  { symbol: 'BTC', name: 'Bitcoin' },
+  { symbol: 'ETH', name: 'Ethereum' },
+  { symbol: 'XRP', name: 'Ripple' },
+  { symbol: 'ADA', name: 'Cardano' },
+  { symbol: 'SOL', name: 'Solana' },
+  { symbol: 'DOT', name: 'Polkadot' },
+  { symbol: 'USDT', name: 'Tether' },
+];
 
 export default function WalletPage() {
   const router = useRouter();
@@ -63,6 +77,16 @@ export default function WalletPage() {
   const [error, setError] = useState('');
   const [showBalance, setShowBalance] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  // Swap state
+  const [swapFrom, setSwapFrom] = useState('USDT');
+  const [swapTo, setSwapTo] = useState('BTC');
+  const [swapAmount, setSwapAmount] = useState('');
+  const [swapPreview, setSwapPreview] = useState<{ rate: number; receiveAmount: number; fee: number; feeRate: number } | null>(null);
+  const [swapLoading, setSwapLoading] = useState(false);
+  const [swapError, setSwapError] = useState('');
+  const [swapSuccess, setSwapSuccess] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Calculate trading analytics
   const calculateAnalytics = (trades: Trade[]) => {
@@ -114,6 +138,67 @@ export default function WalletPage() {
       buyCount: buyTrades.length,
       sellCount: sellTrades.length,
     };
+  };
+
+  // Swap functions
+  const fetchSwapPreview = async () => {
+    if (!swapAmount || Number(swapAmount) <= 0 || swapFrom === swapTo) return;
+    setPreviewLoading(true);
+    setSwapError('');
+    try {
+      const params = new URLSearchParams({ from: swapFrom, to: swapTo, amount: swapAmount });
+      const res = await fetch(`/api/wallet/swap?${params}`);
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Failed to get rate');
+      setSwapPreview(d);
+    } catch (err: any) {
+      setSwapError(err.message);
+      setSwapPreview(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const executeSwap = async () => {
+    if (!swapAmount || Number(swapAmount) <= 0 || swapFrom === swapTo) return;
+    setSwapLoading(true);
+    setSwapError('');
+    setSwapSuccess('');
+    try {
+      const res = await fetch('/api/wallet/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: swapFrom, to: swapTo, amount: Number(swapAmount) }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Swap failed');
+      setSwapSuccess(`Swapped ${d.amountSent} ${swapFrom} → ${d.amountReceived.toFixed(6)} ${swapTo} (fee: ${d.fee.toFixed(4)} ${swapFrom})`);
+      setSwapAmount('');
+      setSwapPreview(null);
+      // Reload wallet data
+      const response = await fetch('/api/dashboard');
+      if (response.ok) {
+        const dashboardData = await response.json();
+        const realCryptos = await fetchRealCryptoData();
+        const enrichedHoldings = dashboardData.portfolio.holdings.map((holding: Holding) => {
+          const realCrypto = realCryptos.find((c: any) => c.symbol === holding.cryptoSymbol);
+          return { ...holding, currentPrice: realCrypto?.currentPrice || holding.currentPrice, totalValue: holding.amount * (realCrypto?.currentPrice || holding.currentPrice) };
+        });
+        setData({ ...dashboardData, portfolio: { ...dashboardData.portfolio, holdings: enrichedHoldings } });
+      }
+      setTimeout(() => setSwapSuccess(''), 5000);
+    } catch (err: any) {
+      setSwapError(err.message);
+    } finally {
+      setSwapLoading(false);
+    }
+  };
+
+  const flipSwap = () => {
+    const temp = swapFrom;
+    setSwapFrom(swapTo);
+    setSwapTo(temp);
+    setSwapPreview(null);
   };
 
   useEffect(() => {
@@ -314,6 +399,15 @@ export default function WalletPage() {
               Transactions
             </div>
           </button>
+          <button
+            onClick={() => setActiveTab('swap')}
+            className={tabClass('swap')}
+          >
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight size={18} />
+              Swap
+            </div>
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -460,6 +554,111 @@ export default function WalletPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Swap Tab */}
+        {activeTab === 'swap' && (
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="glass-card border border-white/10 p-5 space-y-4">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <ArrowLeftRight size={16} className="text-accent" /> Convert Crypto
+              </h3>
+              <p className="text-[11px] text-gray-400">Instantly swap between supported coins at live market rates. 0.5% conversion fee applies.</p>
+
+              {swapError && <div className="p-2.5 rounded-lg bg-danger/20 text-danger text-xs">{swapError}</div>}
+              {swapSuccess && <div className="p-2.5 rounded-lg bg-success/20 text-success text-xs">{swapSuccess}</div>}
+
+              {/* From */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] text-gray-400">From</label>
+                <div className="flex gap-2">
+                  <select
+                    value={swapFrom}
+                    onChange={e => { setSwapFrom(e.target.value); setSwapPreview(null); }}
+                    className="w-28 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+                  >
+                    {SWAP_COINS.filter(c => c.symbol !== swapTo).map(c => (
+                      <option key={c.symbol} value={c.symbol}>{c.symbol}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={swapAmount}
+                    onChange={e => { setSwapAmount(e.target.value); setSwapPreview(null); }}
+                    placeholder="Amount"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+                  />
+                </div>
+                {data && swapFrom === 'USDT' && (
+                  <p className="text-[10px] text-gray-500">Available: {data.portfolio.accountBalance.toLocaleString()} USDT</p>
+                )}
+                {data && swapFrom !== 'USDT' && (() => {
+                  const h = data.portfolio.holdings.find(h => h.cryptoSymbol === swapFrom);
+                  return h ? <p className="text-[10px] text-gray-500">Available: {h.amount.toFixed(6)} {swapFrom}</p> : <p className="text-[10px] text-gray-500">No {swapFrom} holdings</p>;
+                })()}
+              </div>
+
+              {/* Flip Button */}
+              <div className="flex justify-center">
+                <button onClick={flipSwap} className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                  <ArrowLeftRight size={16} className="text-accent rotate-90" />
+                </button>
+              </div>
+
+              {/* To */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] text-gray-400">To</label>
+                <select
+                  value={swapTo}
+                  onChange={e => { setSwapTo(e.target.value); setSwapPreview(null); }}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+                >
+                  {SWAP_COINS.filter(c => c.symbol !== swapFrom).map(c => (
+                    <option key={c.symbol} value={c.symbol}>{c.symbol} - {c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Preview */}
+              <button
+                onClick={fetchSwapPreview}
+                disabled={!swapAmount || Number(swapAmount) <= 0 || previewLoading}
+                className="w-full py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {previewLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                {previewLoading ? 'Loading rate...' : 'Preview Rate'}
+              </button>
+
+              {swapPreview && (
+                <div className="p-3 rounded-lg bg-accent/5 border border-accent/20 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Rate</span>
+                    <span className="font-mono">1 {swapFrom} = {swapPreview.rate.toFixed(6)} {swapTo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">You receive</span>
+                    <span className="font-mono font-semibold text-accent">{swapPreview.receiveAmount.toFixed(6)} {swapTo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Fee ({(swapPreview.feeRate * 100).toFixed(1)}%)</span>
+                    <span className="font-mono text-gray-300">{swapPreview.fee.toFixed(4)} {swapFrom}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Execute */}
+              <button
+                onClick={executeSwap}
+                disabled={!swapAmount || Number(swapAmount) <= 0 || swapLoading}
+                className="w-full py-3 rounded-lg bg-accent hover:bg-accent/80 text-black font-bold text-sm transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {swapLoading ? <Loader2 size={14} className="animate-spin" /> : <ArrowLeftRight size={14} />}
+                {swapLoading ? 'Swapping...' : `Swap ${swapFrom} → ${swapTo}`}
+              </button>
             </div>
           </div>
         )}
