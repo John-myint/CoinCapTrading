@@ -52,20 +52,16 @@ export async function POST(request: NextRequest) {
       verificationTokenExpires,
     });
 
-    const emailResult = await sendVerificationEmail(email, verificationToken);
-    
-    if (!emailResult.success) {
-      log.warn({ error: emailResult.error }, 'Failed to send verification email');
-      
-      // In development: Auto-verify if email fails (Resend test domain restriction)
-      if (process.env.NODE_ENV === 'development' && emailResult.error?.includes('testing emails')) {
-        log.info('Auto-verifying user (dev mode - email restriction)');
-        user.isVerified = true;
-        user.verificationToken = null;
-        user.verificationTokenExpires = null;
-        await user.save();
-      }
-    }
+    // Send verification email in background — don't block the response
+    sendVerificationEmail(email, verificationToken)
+      .then((emailResult) => {
+        if (!emailResult.success) {
+          log.warn({ error: emailResult.error }, 'Failed to send verification email');
+        }
+      })
+      .catch((err) => {
+        log.warn({ error: err }, 'Email send threw unexpectedly');
+      });
 
     log.info({ userId: user._id }, 'User registered successfully');
 

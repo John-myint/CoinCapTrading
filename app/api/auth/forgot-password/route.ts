@@ -48,14 +48,16 @@ export async function POST(request: NextRequest) {
     user.resetTokenExpires = resetTokenExpires;
     await user.save();
 
-    // Send password reset email with plain token (user receives this)
-    const emailResult = await sendPasswordResetEmail(email, resetToken);
-
-    if (!emailResult.success) {
-      log.warn({ error: emailResult.error }, 'Failed to send password reset email');
-    } else {
-      log.info('Password reset email sent successfully');
-    }
+    // Send password reset email in background — don't block response
+    sendPasswordResetEmail(email, resetToken)
+      .then((emailResult) => {
+        if (!emailResult.success) {
+          log.warn({ error: emailResult.error }, 'Failed to send password reset email');
+        } else {
+          log.info('Password reset email sent successfully');
+        }
+      })
+      .catch((err) => log.warn({ error: err }, 'Password reset email threw unexpectedly'));
 
     return NextResponse.json(
       { message: 'If an account with this email exists, a password reset link has been sent.' },

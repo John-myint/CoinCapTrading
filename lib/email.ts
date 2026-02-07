@@ -7,15 +7,19 @@ const useMailtrap = !!(process.env.SMTP_HOST && process.env.SMTP_PORT && process
 // Initialize Resend if API key is available and not using Mailtrap
 const resend = !useMailtrap && process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Initialize Nodemailer transport for Mailtrap
+// Initialize Nodemailer transport for SMTP
 const transporter = useMailtrap
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '2525'),
+      secure: parseInt(process.env.SMTP_PORT || '2525') === 465,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 8000,  // 8s to connect
+      greetingTimeout: 8000,    // 8s for greeting
+      socketTimeout: 10000,     // 10s for socket idle
     })
   : null;
 

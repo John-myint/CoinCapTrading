@@ -53,14 +53,16 @@ export async function POST(request: NextRequest) {
     user.verificationTokenExpires = verificationTokenExpires;
     await user.save();
 
-    // Send verification email
-    const emailResult = await sendVerificationEmail(email, verificationToken);
-
-    if (!emailResult.success) {
-      log.warn({ error: emailResult.error }, 'Failed to resend verification email');
-    } else {
-      log.info('Verification email resent successfully');
-    }
+    // Send verification email in background — don't block response
+    sendVerificationEmail(email, verificationToken)
+      .then((emailResult) => {
+        if (!emailResult.success) {
+          log.warn({ error: emailResult.error }, 'Failed to resend verification email');
+        } else {
+          log.info('Verification email resent successfully');
+        }
+      })
+      .catch((err) => log.warn({ error: err }, 'Resend verification email threw unexpectedly'));
 
     return NextResponse.json(
       { message: 'If an account with this email exists and is unverified, a verification email has been sent.' },
