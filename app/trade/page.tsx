@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
 import { useCoinCapPrices } from '@/lib/hooks/useCoinCapPrices';
 import { TradingViewChart } from '@/lib/components/TradingViewChart';
-import { AVAILABLE_CRYPTOS, ORDER_BOOK_DATA, type CryptoType } from '@/lib/constants';
+import { AVAILABLE_CRYPTOS, type CryptoType } from '@/lib/constants';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import TradeModal from '@/lib/components/TradeModal';
@@ -36,15 +36,35 @@ const formatVolume = (value: number) => {
   return `$${value.toFixed(2)}`;
 };
 
-const orderBook = ORDER_BOOK_DATA;
+// Generate dynamic order book/trades based on live price
+function generateOrderBook(basePrice: number) {
+  if (!basePrice) return { asks: [], bids: [] };
+  return {
+    asks: [
+      { price: formatPrice(basePrice + 2.10), amount: '0.156', total: formatPrice((basePrice + 2.10) * 0.156) },
+      { price: formatPrice(basePrice + 1.70), amount: '0.084', total: formatPrice((basePrice + 1.70) * 0.084) },
+      { price: formatPrice(basePrice + 1.20), amount: '0.324', total: formatPrice((basePrice + 1.20) * 0.324) },
+      { price: formatPrice(basePrice + 0.80), amount: '0.440', total: formatPrice((basePrice + 0.80) * 0.440) },
+    ],
+    bids: [
+      { price: formatPrice(basePrice - 0.10), amount: '0.210', total: formatPrice((basePrice - 0.10) * 0.210) },
+      { price: formatPrice(basePrice - 0.50), amount: '0.367', total: formatPrice((basePrice - 0.50) * 0.367) },
+      { price: formatPrice(basePrice - 0.90), amount: '0.125', total: formatPrice((basePrice - 0.90) * 0.125) },
+      { price: formatPrice(basePrice - 1.40), amount: '0.520', total: formatPrice((basePrice - 1.40) * 0.520) },
+    ],
+  };
+}
 
-const recentTrades = [
-  { id: 1, price: '43,250.10', amount: '0.024', time: '12:04:32', isUp: true },
-  { id: 2, price: '43,249.80', amount: '0.120', time: '12:04:10', isUp: false },
-  { id: 3, price: '43,250.60', amount: '0.065', time: '12:03:58', isUp: true },
-  { id: 4, price: '43,249.20', amount: '0.018', time: '12:03:41', isUp: false },
-  { id: 5, price: '43,250.30', amount: '0.210', time: '12:03:22', isUp: true },
-];
+function generateRecentTrades(basePrice: number) {
+  if (!basePrice) return [];
+  return [
+    { id: 1, price: formatPrice(basePrice + 0.10), amount: '0.024', time: '12:04:32', isUp: true },
+    { id: 2, price: formatPrice(basePrice - 0.20), amount: '0.120', time: '12:04:10', isUp: false },
+    { id: 3, price: formatPrice(basePrice + 0.60), amount: '0.065', time: '12:03:58', isUp: true },
+    { id: 4, price: formatPrice(basePrice - 0.80), amount: '0.018', time: '12:03:41', isUp: false },
+    { id: 5, price: formatPrice(basePrice + 0.30), amount: '0.210', time: '12:03:22', isUp: true },
+  ];
+}
 
 export default function TradePage() {
   const { status } = useSession();
@@ -298,23 +318,27 @@ export default function TradePage() {
               <span className="text-right">Amount</span>
               <span className="text-right">Total</span>
             </div>
-            <div className="space-y-0.5">
-              {orderBook.asks.slice(0, 2).map((ask, idx) => (
-                <div key={`ask-${idx}`} className="grid grid-cols-3 text-danger text-[10px]">
-                  <span>{ask.price}</span>
-                  <span className="text-right text-gray-200">{ask.amount}</span>
-                  <span className="text-right text-gray-400">{ask.total}</span>
-                </div>
-              ))}
-              <div className="py-0.5 border-y border-white/10 text-center font-bold text-[10px]">{livePrice}</div>
-              {orderBook.bids.slice(0, 2).map((bid, idx) => (
-                <div key={`bid-${idx}`} className="grid grid-cols-3 text-success text-[10px]">
-                  <span>{bid.price}</span>
-                  <span className="text-right text-gray-200">{bid.amount}</span>
-                  <span className="text-right text-gray-400">{bid.total}</span>
-                </div>
-              ))}
-            </div>
+            {livePriceNum ? (
+              <div className="space-y-0.5">
+                {generateOrderBook(livePriceNum).asks.slice(0, 2).map((ask, idx) => (
+                  <div key={`ask-${idx}`} className="grid grid-cols-3 text-danger text-[10px]">
+                    <span>{ask.price}</span>
+                    <span className="text-right text-gray-200">{ask.amount}</span>
+                    <span className="text-right text-gray-400">{ask.total}</span>
+                  </div>
+                ))}
+                <div className="py-0.5 border-y border-white/10 text-center font-bold text-[10px]">{livePrice}</div>
+                {generateOrderBook(livePriceNum).bids.slice(0, 2).map((bid, idx) => (
+                  <div key={`bid-${idx}`} className="grid grid-cols-3 text-success text-[10px]">
+                    <span>{bid.price}</span>
+                    <span className="text-right text-gray-200">{bid.amount}</span>
+                    <span className="text-right text-gray-400">{bid.total}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-[10px] text-gray-500 py-3 animate-pulse">Loading...</div>
+            )}
           </div>
         </div>
       </div>

@@ -68,7 +68,7 @@ export const fetchRealCryptoData = async (): Promise<CryptoData[]> => {
       {
         symbol: 'BTC',
         name: 'Bitcoin',
-        currentPrice: 43250.00,
+        currentPrice: 0,
         changePercent24Hr: 2.5,
         marketCap: 850000000000,
       },

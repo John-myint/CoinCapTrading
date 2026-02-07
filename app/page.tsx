@@ -338,31 +338,40 @@ export default function HomePage() {
             onClick={() => router.push('/trade')}
           >
             <h2 className="text-[10px] font-semibold mb-1.5">Order Book</h2>
-            <div className="space-y-0.5 text-[10px]">
-              <div className="flex justify-between text-gray-400 pb-0.5 border-b border-white/10">
-                <span>Price</span>
-                <span>Amount</span>
-              </div>
-              <div className="flex justify-between text-danger">
-                <span>43,251.20</span>
-                <span>0.125</span>
-              </div>
-              <div className="flex justify-between text-danger">
-                <span>43,250.50</span>
-                <span>0.567</span>
-              </div>
-              <div className="py-0.5 border-y border-white/10 text-center font-bold">
-                43,250.00
-              </div>
-              <div className="flex justify-between text-success">
-                <span>43,249.50</span>
-                <span>0.234</span>
-              </div>
-              <div className="flex justify-between text-success">
-                <span>43,248.80</span>
-                <span>0.456</span>
-              </div>
-            </div>
+            {(() => {
+              const btcLive = prices['bitcoin'];
+              const base = btcLive?.priceUsd || 0;
+              if (!base) return (
+                <div className="text-center text-[10px] text-gray-500 py-3 animate-pulse">Loading order book...</div>
+              );
+              return (
+                <div className="space-y-0.5 text-[10px]">
+                  <div className="flex justify-between text-gray-400 pb-0.5 border-b border-white/10">
+                    <span>Price</span>
+                    <span>Amount</span>
+                  </div>
+                  <div className="flex justify-between text-danger">
+                    <span>{formatPrice(base + 1.20)}</span>
+                    <span>0.125</span>
+                  </div>
+                  <div className="flex justify-between text-danger">
+                    <span>{formatPrice(base + 0.50)}</span>
+                    <span>0.567</span>
+                  </div>
+                  <div className="py-0.5 border-y border-white/10 text-center font-bold">
+                    {formatPrice(base)}
+                  </div>
+                  <div className="flex justify-between text-success">
+                    <span>{formatPrice(base - 0.50)}</span>
+                    <span>0.234</span>
+                  </div>
+                  <div className="flex justify-between text-success">
+                    <span>{formatPrice(base - 1.20)}</span>
+                    <span>0.456</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
