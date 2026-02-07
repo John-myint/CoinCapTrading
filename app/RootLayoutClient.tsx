@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { SessionProvider, useSession } from 'next-auth/react';
+import ChatWidget from '@/lib/components/ChatWidget';
 
 interface RootLayoutClientProps {
   children: React.ReactNode;
@@ -183,6 +184,9 @@ function RootLayoutContent({
           })}
         </div>
       </nav>
+
+      {/* Chat Widget */}
+      {!isAuthPage && <ChatWidget />}
     </div>
   );
 }

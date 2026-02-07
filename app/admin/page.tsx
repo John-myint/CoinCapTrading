@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Shield, RefreshCw, Users, TrendingUp, TrendingDown, Clock, Loader2, AlertCircle, DollarSign, Plus, Minus, KeyRound } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Shield, RefreshCw, Users, TrendingUp, TrendingDown, Clock, Loader2, AlertCircle, DollarSign, Plus, Minus, KeyRound, MessageCircle, Send, Paperclip, X as XIcon } from 'lucide-react';
 
 interface TradeSettingsData {
   globalMode: 'random' | 'all_win' | 'all_lose';
@@ -73,6 +73,34 @@ export default function AdminPage() {
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Chat state
+  interface ChatConversation {
+    userId: string;
+    userName: string;
+    userEmail: string;
+    lastMessage: string;
+    lastSender: string;
+    lastTime: string;
+    unreadCount: number;
+    totalMessages: number;
+  }
+  interface ChatMsg {
+    _id: string;
+    sender: 'user' | 'admin';
+    senderName: string;
+    text: string;
+    attachments: { type: 'image' | 'video'; name: string; data: string }[];
+    createdAt: string;
+  }
+  const [chatConversations, setChatConversations] = useState<ChatConversation[]>([]);
+  const [activeChatUser, setActiveChatUser] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const [chatAttachments, setChatAttachments] = useState<{ type: 'image' | 'video'; name: string; data: string }[]>([]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatFileRef = useRef<HTMLInputElement>(null);
+
   const headers = useCallback(() => ({
     'Content-Type': 'application/json',
     'x-admin-key': adminKey,
@@ -103,6 +131,13 @@ export default function AdminPage() {
       if (balRes.ok) {
         const balData = await balRes.json();
         setUserBalances(balData.users);
+      }
+
+      // Also fetch chat conversations
+      const chatRes = await fetch('/api/admin/chat', { headers: headers() });
+      if (chatRes.ok) {
+        const chatData = await chatRes.json();
+        setChatConversations(chatData.conversations || []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load');
@@ -213,6 +248,87 @@ export default function AdminPage() {
       setError(err.message);
     }
   };
+
+  // Chat functions
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/chat', { headers: headers() });
+      if (res.ok) {
+        const data = await res.json();
+        setChatConversations(data.conversations || []);
+      }
+    } catch {}
+  }, [headers]);
+
+  const fetchChatMessages = useCallback(async (userId: string) => {
+    try {
+      const res = await fetch(`/api/admin/chat?userId=${userId}`, { headers: headers() });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(data.messages || []);
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      }
+    } catch {}
+  }, [headers]);
+
+  const openChat = (userId: string) => {
+    setActiveChatUser(userId);
+    setChatMessages([]);
+    setChatInput('');
+    setChatAttachments([]);
+    fetchChatMessages(userId);
+  };
+
+  const sendAdminMessage = async () => {
+    if (!activeChatUser || (!chatInput.trim() && chatAttachments.length === 0) || chatSending) return;
+    setChatSending(true);
+    try {
+      const res = await fetch('/api/admin/chat', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({
+          userId: activeChatUser,
+          text: chatInput.trim(),
+          attachments: chatAttachments,
+        }),
+      });
+      if (res.ok) {
+        setChatInput('');
+        setChatAttachments([]);
+        fetchChatMessages(activeChatUser);
+        fetchConversations();
+      }
+    } catch {}
+    setChatSending(false);
+  };
+
+  const handleChatFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      if (file.size > 5 * 1024 * 1024) { alert('Max 5MB'); return; }
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      if (!isImage && !isVideo) { alert('Images/videos only'); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setChatAttachments((prev) => prev.length >= 3 ? prev : [...prev, {
+          type: isImage ? 'image' : 'video',
+          name: file.name,
+          data: reader.result as string,
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  // Poll chat messages for active conversation
+  useEffect(() => {
+    if (!activeChatUser || !isAuthenticated) return;
+    const interval = setInterval(() => fetchChatMessages(activeChatUser), 4000);
+    return () => clearInterval(interval);
+  }, [activeChatUser, isAuthenticated, fetchChatMessages]);
 
   const removeUserOverride = async (userId: string) => {
     try {
@@ -652,6 +768,152 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+
+      {/* Customer Chat */}
+      <div className="glass-card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold flex items-center gap-1.5">
+            <MessageCircle size={14} className="text-accent" /> Customer Chat
+            {chatConversations.reduce((s, c) => s + c.unreadCount, 0) > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-danger text-[9px] text-white font-bold">
+                {chatConversations.reduce((s, c) => s + c.unreadCount, 0)}
+              </span>
+            )}
+          </h2>
+          <button onClick={fetchConversations} className="text-[10px] text-gray-400 hover:text-white">
+            <RefreshCw size={12} />
+          </button>
+        </div>
+
+        {activeChatUser ? (
+          <>
+            {/* Chat header */}
+            <div className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2">
+              <div>
+                <p className="text-xs font-bold">
+                  {chatConversations.find((c) => c.userId === activeChatUser)?.userName || 'User'}
+                </p>
+                <p className="text-[9px] text-gray-400">
+                  {chatConversations.find((c) => c.userId === activeChatUser)?.userEmail}
+                </p>
+              </div>
+              <button
+                onClick={() => { setActiveChatUser(null); fetchConversations(); }}
+                className="text-[10px] text-gray-400 hover:text-white px-2 py-1 rounded bg-white/5"
+              >
+                ← Back
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="h-64 overflow-y-auto space-y-2 bg-black/20 rounded-lg p-3">
+              {chatMessages.length === 0 ? (
+                <p className="text-[10px] text-gray-500 text-center mt-8">No messages</p>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div key={msg._id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[75%] rounded-lg px-2.5 py-1.5 space-y-1 ${
+                      msg.sender === 'admin' ? 'bg-accent/20 rounded-br-sm' : 'bg-white/10 rounded-bl-sm'
+                    }`}>
+                      <p className="text-[9px] text-gray-400 font-medium">{msg.senderName}</p>
+                      {msg.attachments?.map((att, i) => (
+                        <div key={i}>
+                          {att.type === 'image' ? (
+                            <img src={att.data} alt={att.name} className="max-w-full rounded max-h-32" />
+                          ) : (
+                            <video src={att.data} controls className="max-w-full rounded max-h-32" />
+                          )}
+                        </div>
+                      ))}
+                      {msg.text && <p className="text-[11px] whitespace-pre-wrap break-words">{msg.text}</p>}
+                      <p className="text-[8px] text-gray-500">{new Date(msg.createdAt).toLocaleTimeString()}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Pending attachments */}
+            {chatAttachments.length > 0 && (
+              <div className="flex gap-1.5">
+                {chatAttachments.map((att, i) => (
+                  <div key={i} className="relative w-12 h-12 rounded overflow-hidden bg-white/5">
+                    {att.type === 'image' ? (
+                      <img src={att.data} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-400">VID</div>
+                    )}
+                    <button
+                      onClick={() => setChatAttachments((p) => p.filter((_, idx) => idx !== i))}
+                      className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-danger text-white flex items-center justify-center"
+                    >
+                      <XIcon size={8} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="flex gap-1.5 items-end">
+              <button onClick={() => chatFileRef.current?.click()} className="p-1.5 rounded bg-white/5 text-gray-400 hover:text-white">
+                <Paperclip size={14} />
+              </button>
+              <input ref={chatFileRef} type="file" accept="image/*,video/*" multiple onChange={handleChatFile} className="hidden" />
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminMessage(); } }}
+                placeholder="Type a reply..."
+                className="flex-1 bg-gray-800 border border-gray-700 text-xs rounded px-2 py-1.5"
+              />
+              <button
+                onClick={sendAdminMessage}
+                disabled={chatSending || (!chatInput.trim() && chatAttachments.length === 0)}
+                className="p-1.5 rounded bg-accent text-black disabled:opacity-30"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Conversation list */}
+            {chatConversations.length === 0 ? (
+              <p className="text-[10px] text-gray-500 italic">No conversations yet</p>
+            ) : (
+              <div className="space-y-1">
+                {chatConversations.map((c) => (
+                  <button
+                    key={c.userId}
+                    onClick={() => openChat(c.userId)}
+                    className="w-full flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-medium truncate">{c.userName}</p>
+                        {c.unreadCount > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-danger text-[9px] text-white font-bold flex-shrink-0">
+                            {c.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[9px] text-gray-400 truncate">{c.userEmail}</p>
+                      <p className="text-[10px] text-gray-500 truncate mt-0.5">
+                        {c.lastSender === 'admin' ? 'You: ' : ''}{c.lastMessage}
+                      </p>
+                    </div>
+                    <p className="text-[9px] text-gray-500 flex-shrink-0 ml-2">
+                      {new Date(c.lastTime).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
